@@ -1,0 +1,27 @@
+[general] 
+creator=R package 'raster' 
+created= 2011-11-12 16:21:21 
+[georeference] 
+nrows= 500 
+ncols= 479 
+xmin= 29.4833333333333 
+ymin= -1.6 
+xmax= 35.1 
+ymax= 4.26666666666667 
+projection= +proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0 
+[data] 
+datatype= INT2S 
+byteorder= little 
+nbands= 1 
+bandorder= BIL 
+categorical= FALSE 
+minvalue= 0 
+maxvalue= 3235 
+nodatavalue= -9999 
+[legend] 
+legendtype=  
+values=  
+color=  
+[description] 
+layername= uga_pop 
+history=  
