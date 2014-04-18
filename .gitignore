@@ -52,3 +52,9 @@ coverage.xml
 # Sphinx documentation
 docs/_build/
 
+# ipynb stuff
+.ipynb_checkpoints/
+
+# pycharm
+.idea
+
