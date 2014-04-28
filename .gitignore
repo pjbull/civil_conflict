@@ -58,3 +58,12 @@ docs/_build/
 # pycharm
 .idea
 
+# TeX
+*.aux
+*.fdb_latexmk
+*.synctex.gz
+*.log
+*.out
+
+
+
