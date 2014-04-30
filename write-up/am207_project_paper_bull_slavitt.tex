@@ -56,7 +56,7 @@ Cambridge, MA 02139 \\
 Using MCMC techniques, we model civil conflict in Uganda and optimize the limited relief aid that can be provided in these scenarios. We describe a method to simulate civil conflict events in space and time given historical data about these events. We also optimize the distribution of limited aid resources to refugees from these crises. Modeling aid delivery as a combination of the traveling salesman problem and the knapsack algorithm --- two NP-hard problems --- we find acceptable solutions using stochaastic metaheuristics.
 \end{abstract}
 
-\section{The Data}
+\section*{The Data}
 
 The data comes from ACLED (Armed Conflict Location and Event Data Project), which is a dataset with locations, dates, fatalities, motivation, actors involved, and other information about civil conflicts in Africa. Their collection of data on Uganda covers 1997-2013, and they have a real-time tracker of events reported in 2014.\cite{ACLED} The need for an understanding of these patterns of conflict is clear, as ACLED notes:
 
@@ -64,56 +64,52 @@ The data comes from ACLED (Armed Conflict Location and Event Data Project), whic
 This dataset codes the dates and locations of all reported political violence events in over 50 developing countries. Political violence includes events that occur within civil wars or periods of instability. Although civil war occurrence is decreasing across African countries, new forms of political violence are becoming more common.
 \end{quote}
 
-For Uganda, the dataset contains around 4,500 observations of civil violence. Each observation includes the data, location, an quantified estimate for how precise these measures are, a number of fatalities for the event, and the actors involved.
-
-\section{Modeling Civil Conflict Events}
+For Uganda, the dataset contains around 4,500 observations of civil violence. Each observation includes the data, location, an quantified estimate for how precise these measures are, a number of fatalities for the event, and the actors involved. Figure \ref{fig:map-points} shows these conflicts scattered on a political map of Uganda.
 
 \begin{figure}
   \centering
-  \includegraphics[width=0.8\textwidth]{figures/PerYear.png}
-  \caption{Civil conflict per year in Uganda 1997-2013. [2]}
-  \label{fig:shells}
+  \begin{subfigure}[b]{0.5\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/uganda}
+    \caption{Civil conflicts in Uganda 1997-2013.}
+    \label{fig:map-points}
+  \end{subfigure}~\begin{subfigure}[b]{0.5\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/map-with-smoothed-data}
+    \caption{Conflicts with Matérn smoothing.}
+    \label{fig:map-smoothed}
+  \end{subfigure}
+  \caption{Civil conflicts in Uganda.}
+  \label{fig:map}
 \end{figure}
 
-We will use a bayesian monte-carlo model to simulate drawing samples (civil conflict events) from their underlying distribution. After creating a grid for the country, we will assume that for a given square $i,j$ a civil conflict event:
 
-\begin{align}
-Y_{i,j} \sim \text{Poi}(\mu_{i,j})
-\end{align}
+\section*{Modeling civil conflict events in space}
 
-We can then place a prior on our rate $\mu_{i,j}$ given our knowledge about other conflicts and other regions (so as to not use the data we are training and testing on to create our prior). In a poisson model, the rate parameter is equal to the mean $\lambda_{i,j} = \mu_{i,j}$. This rate parameter is connected to a linear combination of the predictors $\mathbf{X}$ as follows where $\beta$ is a set of weighting coefficients:
+While we could have trivially fit a Gaussian Process (GP) using the given data, we thought it would be more interesting to apply more directly the MCMC sampling methods learned in this class.  From the MCMC standpoint, it was simple to treat the entire country of Uganda as a probability distribution from which geospatial conflict events could be sampled.  We took historical conflict location data from the entire ACLED data set and smoothed it using a Matérn covariance function.  Figure \ref{fig:map-smoothed} shows this smoothing applied to the same conflicts depicted in \ref{fig:map-points}.
 
-\begin{align}
-\lambda_{i,j}  = \exp(x_{i,j} \beta)
-\end{align}
+We then discretized that smooth function, which left us with a 2D matrix from which it was easy to sample with any number of samples. Although we experimented with many different methods, we ultimately settled on slice sampling for its favorable, efficient properties. Figure \ref{fig:discretized-matrix} shows this matrix.
 
-This becomes bayesian when we start to consider a prior distribution over these coefficients, $\beta$. In practice, the prior is given by the multivariate normal [3]:
+\section*{Optimizing Resource Placement and Allocation}
 
-\begin{align}
-\beta  \sim \mathcal{N}(b_0, B^{-1}_0)
-\end{align}
+In the second part of this project, we use the first section as both inspiration for the aid delivery analogy and also as a source of randomly sampled data points representing geospatially distributed conflicts.
 
-where $b_0$ is the vector of means of the explanatory variables and $B_0$ is the precision matrix for the explanatory variables.
+\subsection*{The Traveling Salesman Problem}
 
-We can then sample potential future conflicts to get an idea of how these conflicts occur within a region. We will then use the samples from this distribution to generate test cases for the optimization problem that we are concerned with.
-
-\section{Optimizing Resource Placement and Allocation}
-
-\subsection*{Traveling Salesman Problem}
-
-\subsubsection*{Problem statement}
+\begin{figure}
+	\centering
+	\includegraphics[width=0.6\textwidth]{figures/matern-smoothed-data}
+	\caption{Discetized matrix for sampling.}
+	\label{fig:discretized-matrix}
+\end{figure}
 
 One question of particular interest that we can tackle using techniques from the class is how to route emergency aid
-to locations where it is needed.  It is all well and good to use our \emph{predictive} methods to anticipate where
-conflicts may occur, but decision makers in a real world scenario would also desire \emph{prescriptive} tools to help
-carry out their mission. For concreteness, let's postulate a Red Cross medical or food supply caravan that originates
+to locations where it is needed.  For concreteness, let's postulate a Red Cross medical or food supply caravan that originates
 from the organization's in-country headquarters. This caravan wishes to visit all $n$ emergent locations in order to
 deliver needed supplies. They wish to do so in the most efficient manner possible.
 
-\subsubsection*{Mathematical specification}
+This is fundamentally an optimization problem, and one that is well known -- it was first described in 1932 by Karl Menger (shortly after his year here at Harvard as a visiting lecturer) and has been studied extensively ever since.\cite{Menger} Here is the traditional convex optimization specification of the problem:\cite{Winston}
 
-This is fundamentally an optimization problem, and one that is well known. Here is the traditional convex optimization
-specification of the problem:
 
 \begin{align*}
 \min &\sum_{i=0}^n \sum_{j\ne i,j=0}^nc_{ij}x_{ij} &&  \\
@@ -124,33 +120,24 @@ specification of the problem:
 	&u_i-u_j +nx_{ij} \le n-1 && 1 \le i \ne j \le n
 \end{align*}
 
-This should be immediately recognizable as the traveling salesman problem (TSP), an integer linear program (ILP) where:
+As is clear from the specification, this is an integer linear program (ILP) where:
 
 \begin{itemize}
   \item $x_{ij}$ is a binary decision variable indicating whether we go from location $i$ to location $j$.
   \item $c_{ij}$ is the distance between location $i$ and location $j$.
   \item The objective function is the sum of the distances for routes that we decide to take.
-  \item The constraints ensure that all locations are visited once and only once.
+  \item The final constraint ensures that all locations are visited once and only once.
 \end{itemize}
 
-The problem, of course, is that brute force solution of the TSP is $\mathcal{O}$$(n!)$. Traditional, deterministic
-algorithm approaches such as branch-and-bound or branch-and-cut are still impractical for larger numbers of nodes.
-In many cases, exhaustive search for global optimality is not even particularly helpful as long as the solution
-found is good enough. We will use simulated annealing (SA) to get acceptable solutions to the TSP (c.f. the class lectures
-and homework problem). 
+\subsection*{Answering complex, realistic questions}
 
-\subsubsection*{Proposed approach (\emph{The Prestige})}
+\subsubsection*{Packing the aid truck - adding the Knapsack Problem}
 
-Hold on to your butts, that's not all. Because we did something similar in class, we will complicate
-this problem a bit. Consider a mash-up of two NP-hard problems: the traveling salesman problem and the
-knapsack problem. ``What? You guys are crazy.'' Maybe, but we're doing it live.
-
-We will make the problem double-plus-NP-hard by making this a multi-objective optimization problem
+We extend the TSP into a multi-objective optimization problem
 where \emph{the contents of the aid trucks} also have an optimization component. Therein lies
 the knapsack problem: subject to a volume or weight constraint, and given that different locations
 might have very different needs such as food, vaccinations, or emergent medical supplies, \emph{which
-supplies do we pack on the trucks}?  This may be a toy problem, but if so it is an inherently unsafe
-toy like a BB gun --- you could put your eye out.
+supplies do we pack on the trucks}?
 
 Here's the unbounded\footnote{Often, this problem is formulated such that you can only bring one of
 each item, but that doesn't make sense here. We want to be able to bring as many types of each type
@@ -175,15 +162,46 @@ In this formulation:
   \item $W$ is the maximum weight the truck can carry.
 \end{itemize}
 
+The problem, of course, is that brute force solution of the TSP is $\mathcal{O}$$(n!)$. Traditional, deterministic
+algorithm approaches such as branch-and-bound or branch-and-cut are still impractical for larger numbers of nodes.
+In many cases, exhaustive search for global optimality is not even particularly helpful as long as the solution
+found is good enough. We will use simulated annealing (SA) to get acceptable solutions to the TSP (c.f. the class lectures
+and homework problem).
 
 \begin{figure}
   \centering
-  \includegraphics[width=0.6\textwidth]{figures/uganda.png}
-  \caption{Civil conflicts in Uganda 1997-2013.}
-  \label{fig:map}
+  \begin{subfigure}[b]{0.5\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/sorties-5000}
+    \caption{After 5,000 iterations.}
+  \end{subfigure}~\begin{subfigure}[b]{0.5\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/sorties-20000}
+    \caption{After 20,000 iterations.}
+  \end{subfigure}
+  \begin{subfigure}[b]{\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/sorties-100000}
+    \caption{After 100,000 iterations.}
+  \end{subfigure}
+  \caption{Routing for the TSP/Knapsack hybrid.}
+  \label{fig:sorties}
 \end{figure}
 
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{figures/sorties-loss}
+	\caption{Loss function acceptances over 100,000 iterations.}
+	\label{fig:sorties-loss}
+\end{figure}
 
+\subsubsection*{Finding the optimal site for the resupply location}
+
+Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+\subsubsection*{Factoring in travel time and loss from service delays}
+
+Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
 \bibliography{proposal}
 
