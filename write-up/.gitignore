@@ -1,0 +1,12 @@
+*.pyc
+*.aux
+*.fdb_latexmk
+*.log
+*.out
+*.pyg
+*.synctex.gz
+*.pyc
+.ipynb_*
+.idea/
+*.bbl
+*.blg
