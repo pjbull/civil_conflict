@@ -2,15 +2,16 @@ from matplotlib import pyplot as plt
 import seaborn as sns
 
 
-def plot_locations(configuration, ax, palette='Set1'):
+def plot_locations(configuration, ax, palette='Set1', plot_hq=True):
     """ plot cities and connections """
     # plot the cities
 
     cs = sns.color_palette(palette)
 
-    ax.scatter(configuration.cities[0, 0],
-               configuration.cities[0, 1],
-               c=cs[0], s=100, marker='s')
+    if plot_hq:
+        ax.scatter(configuration.cities[0, 0],
+                   configuration.cities[0, 1],
+                   c=cs[0], s=100, marker='s')
 
     ax.scatter(configuration.cities[1:, 0],
                configuration.cities[1:, 1],

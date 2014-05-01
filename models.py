@@ -1,49 +1,54 @@
 import numpy as np
 from scipy.spatial.distance import euclidean
+from haversine import haversine
 
 
 class Configuration(object):
     """ class to hold state and utility functions for cities TSP """
 
-    def __init__(self, n=101, domain=(0, 50), time_per_dist=1, default_needs=(10, 5, 2)):
+    def __init__(self, n=21, domain=(0, 50), time_per_dist=1, default_needs=(10, 5, 2)):
         """ set contants, create random cities, and precompute lookup matrices """
-        ind_hq = 0
-        
+
         # set constants
         self.n = n
         self.domain = domain
         self.time_per_dist = time_per_dist
 
-        # set the headquarters in the middle of the map
-        self.hq = np.array([np.mean(domain)] * 2, dtype=np.float)
-
         # randomly seed a configuration of (n + 1) locations, cities[0, 0] is HQ
         self.cities = np.random.uniform(*self.domain, size=(self.n, 2))
 
-        # center the headquarters
-        self.cities[ind_hq, :] = self.hq
-
         # set the sizes of each location
         self.sizes = np.random.randint(low=1, high=11, size=self.n)
-        self.sizes[ind_hq] = 1
 
         # randomly set the proportional needs of each of location
         self.needs = np.random.dirichlet(default_needs, self.n)
-        self.needs[ind_hq] *= 0
-        
+
         # set a placeholder for the scaled (absolute need) of each location
         self.scaled_needs = np.empty_like(self.needs)
+
+        # put HQ at the center of the map
+        center = np.array([np.mean(self.domain)] * 2, dtype=np.float)
+        self.set_hq(center)
 
         # compute the distances between locations
         self.distances = np.zeros((n, n), dtype=np.float)
         self.times = np.zeros((n, n), dtype=np.float)
-        self.precompute()
+        self.compute_matrices()
 
-    def precompute(self):
+    def set_hq(self, location):
+        """ set the location of headquarters """
+
+        # center the headquarters
+        self.cities[0, :] = location
+        self.sizes[0] = 1
+        self.needs[0] *= 0
+
+    def compute_matrices(self):
         """ precompute distance, flight connection, and time matrices """
         for i in xrange(self.n):
             for j in xrange(self.n):
-                self.distances[i, j] = euclidean(self.cities[i, :], self.cities[j, :])
+                # use the haversine (Earth-surface) distance (in km)
+                self.distances[i, j] = haversine(self.cities[i, :], self.cities[j, :])
 
         # use the distances to set up the time matrix
         self.times = self.distances * self.time_per_dist
@@ -62,16 +67,17 @@ class Route(object):
     
     def __init__(self, configuration, load_at_hq):
         self.configuration = configuration
-        self.load_at_hq = load_at_hq
+        self._load_at_hq = load_at_hq
         self._current_load = load_at_hq.copy()
-    
-    def has_repeats(self, perm):
+
+    @staticmethod
+    def has_repeats(perm):
         """ determine if a permutation visits any location consecutively """
-        return np.where(perm[:-1]==perm[1:])[0].size > 0
+        return np.where(perm[:-1] == perm[1:])[0].size > 0
     
     def refill_truck(self):
         """ reload the truck based on reload settings """
-        self._current_load = self.load_at_hq.copy()
+        self._current_load = self._load_at_hq.copy()
         
     def unmet_needs(self, perm):
         """ determine how many aid shortfalls occur given truck's load """
@@ -103,22 +109,22 @@ class Route(object):
     def loss(self, perm):
         """ calculate the energy of a given order of cities """
         return self.dist(perm) + self.unmet_needs(perm).sum() ** 2
-    
+
     def perturb(self, perm, max_hq_stops=12, p_add_hq_stop=0.05, p_remove_hq_stop=0.1):
         """ propose a new solution by perturbing current arrangement """
 
         assert perm[0] == 0  # make sure we're starting at HQ
         new = perm.copy()
         
-        working_inds = np.arange(1, perm.size)
+        non_hq_indices = np.arange(1, perm.size)
 
         # choose two random indices to switch and switch them
-        inds = np.random.choice(working_inds, size=2, replace=False)
-        new[inds] = new[inds][::-1]
+        random_indices = np.random.choice(non_hq_indices, size=2, replace=False)
+        new[random_indices] = new[random_indices][::-1]
         
         # maybe add a zero (visit to HQ to reload)
         if (new == 0).sum() <= max_hq_stops and np.random.rand() < p_add_hq_stop:
-            j = np.random.choice(working_inds)
+            j = np.random.choice(non_hq_indices)
             new = np.concatenate((new[:j], np.array([0.]), new[j:]))
             
         # maybe remove a zero (visit to HQ to reload)
@@ -128,8 +134,46 @@ class Route(object):
             new = np.concatenate((new[:j], new[j+1:]))
             
         # remove any repeats (deterministic -- must happen)
-        while(self.has_repeats(new)):
-            j = np.where(new[:-1]==new[1:])[0][0]
+        while Route.has_repeats(new):
+            j = np.where(new[:-1] == new[1:])[0][0]
             new = np.concatenate((new[:j], new[j+1:]))
 
         return new
+
+
+class HqLocator(object):
+    """ class which also moves HQ around """
+
+    def __init__(self, n=100, domain=(0, 50)):
+        self.n = n
+        self.domain = domain
+        self.draw_new_random_cities()
+        self._proposed_location = np.array([5, 5])
+
+    def draw_new_random_cities(self):
+        """ draw new configuration of cities from our distribution """
+        self.cities = np.random.uniform(*self.domain, size=(self.n, 2))
+
+    def loss(self, hq_location):
+        dists = np.array([haversine(self.cities[i, :], hq_location)
+                          for i in xrange(self.n)])
+        return (dists ** 2).sum()
+
+    def proposed_location(self, *args):
+        """ utility method to keep track of HQ location from the SA algorithm """
+        return self._proposed_location
+
+    def perturb(self, hq_location, **kwargs):
+        """ this time we'll switch the headquarters around location too """
+
+        self._proposed_location = hq_location.copy()
+
+        if np.random.rand() < 0.2:
+            self.draw_new_random_cities()
+
+        dmin, dmax = self.domain
+
+        self._proposed_location += np.random.uniform(-1, 1, size=2)
+        self._proposed_location = np.clip(self._proposed_location, dmin, dmax)
+
+        return self._proposed_location

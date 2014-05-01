@@ -76,7 +76,7 @@ For Uganda, the dataset contains around 4,500 observations of civil violence. Ea
   \end{subfigure}~\begin{subfigure}[b]{0.5\textwidth}
     \centering
     \includegraphics[width=\textwidth]{figures/map-with-smoothed-data}
-    \caption{Conflicts with Matérn smoothing.}
+    \caption{Conflicts with Mat\'{e}n smoothing.}
     \label{fig:map-smoothed}
   \end{subfigure}
   \caption{Civil conflicts in Uganda.}
@@ -86,7 +86,7 @@ For Uganda, the dataset contains around 4,500 observations of civil violence. Ea
 
 \section*{Modeling civil conflict events in space}
 
-While we could have trivially fit a Gaussian Process (GP) using the given data, we thought it would be more interesting to apply more directly the MCMC sampling methods learned in this class.  From the MCMC standpoint, it was simple to treat the entire country of Uganda as a probability distribution from which geospatial conflict events could be sampled.  We took historical conflict location data from the entire ACLED data set and smoothed it using a Matérn covariance function.  Figure \ref{fig:map-smoothed} shows this smoothing applied to the same conflicts depicted in \ref{fig:map-points}.
+While we could have trivially fit a Gaussian Process (GP) using the given data, we thought it would be more interesting to apply more directly the MCMC sampling methods learned in this class.  From the MCMC standpoint, it was simple to treat the entire country of Uganda as a probability distribution from which geospatial conflict events could be sampled.  We took historical conflict location data from the entire ACLED data set and smoothed it using a Mat\'{e}rn covariance function.  Figure \ref{fig:map-smoothed} shows this smoothing applied to the same conflicts depicted in \ref{fig:map-points}.
 
 We then discretized that smooth function, which left us with a 2D matrix from which it was easy to sample with any number of samples. Although we experimented with many different methods, we ultimately settled on slice sampling for its favorable, efficient properties. Figure \ref{fig:discretized-matrix} shows this matrix.
 
