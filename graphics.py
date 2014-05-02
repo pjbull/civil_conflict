@@ -11,18 +11,18 @@ def plot_locations(configuration, ax, palette='Set1', plot_hq=True):
     if plot_hq:
         ax.scatter(configuration.cities[0, 0],
                    configuration.cities[0, 1],
-                   c=cs[0], s=100, marker='s')
+                   c=cs[0], s=100, marker='s', zorder=101)
 
     ax.scatter(configuration.cities[1:, 0],
                configuration.cities[1:, 1],
                s=configuration.sizes * 10,
-               c=cs[1], zorder=2)
+               c=cs[1], zorder=100)
 
     # set sensible plotting limits
     mind, maxd = configuration.domain
     delta = (maxd - mind) * 0.05
-    ax.set_xlim(mind - delta, maxd + delta)
-    ax.set_ylim(mind - delta, maxd + delta)
+    # ax.set_xlim(mind - delta, maxd + delta)
+    # ax.set_ylim(mind - delta, maxd + delta)
 
     return ax
 
@@ -53,7 +53,7 @@ def plot_route_with_colors(configuration, perm, ax, palette='Set2'):
     # plot the starting point as a green circle
     ax.plot(*configuration.cities[perm[0], :],
             c='g', marker='.', label='start',
-            markersize=40.0, alpha=0.5, zorder=1)
+            markersize=40.0, alpha=0.5, zorder=102)
 
     sortie = 0
     color_palette = sns.color_palette(palette, 12)
@@ -66,12 +66,12 @@ def plot_route_with_colors(configuration, perm, ax, palette='Set2'):
             c = color_palette[sortie]
             sortie += 1
             label = 'sortie %d' % sortie
-            ax.plot(None, None, ls='-', c=c, label=label)
+            ax.plot(None, None, ls='-', c=c, label=label, zorder=103)
 
         dd = configuration.cities[j, :] - configuration.cities[i, :]
         ax.arrow(configuration.cities[i, 0],
                  configuration.cities[i, 1], dd[0], dd[1],
-                 length_includes_head=True, width=0.05,
-                 color=c, zorder=3)
+                 length_includes_head=True, width=0.005,
+                 color=c, zorder=104)
 
     return ax
