@@ -6,7 +6,12 @@ from haversine import haversine
 class Configuration(object):
     """ class to hold state and utility functions for cities TSP """
 
-    def __init__(self, n=21, domain=(0, 50), time_per_dist=1, default_needs=(10, 5, 2)):
+    def __init__(self, 
+                 n=21, 
+                 domain=(0, 50), 
+                 time_per_dist=1, 
+                 default_needs=(10, 5, 2), 
+                 sample_method=np.random.uniform):
         """ set contants, create random cities, and precompute lookup matrices """
 
         # set constants
@@ -15,7 +20,7 @@ class Configuration(object):
         self.time_per_dist = time_per_dist
 
         # randomly seed a configuration of (n + 1) locations, cities[0, 0] is HQ
-        self.cities = np.random.uniform(*self.domain, size=(self.n, 2))
+        self.cities = sample_method(*self.domain, size=(self.n, 2))
 
         # set the sizes of each location
         self.sizes = np.random.randint(low=1, high=11, size=self.n)
