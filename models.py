@@ -149,11 +149,19 @@ class Route(object):
 class HqLocator(object):
     """ class which also moves HQ around """
 
-    def __init__(self, n=100, domain=(0, 50)):
+    def __init__(self, n=100, domain=(0, 50), configuration=None, proposed_location=None):
+
         self.n = n
         self.domain = domain
         self.draw_new_random_cities()
-        self._proposed_location = np.array([5, 5])
+
+        if proposed_location is not None:
+            self._proposed_location = np.array([5, 5])
+
+        if configuration:
+            self.n = configuration.n
+            self.domain = configuration.domain
+            self.cities = configuration.cities
 
     def draw_new_random_cities(self):
         """ draw new configuration of cities from our distribution """

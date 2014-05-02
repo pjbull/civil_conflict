@@ -113,7 +113,7 @@ ax.contourf(LO, LA, k.pdf([LA.ravel(), LO.ravel()]).reshape(400, 400), 15, zorde
 fig.show()
 
 
-# In[88]:
+# In[157]:
 
 def mvslice(pdf, x0, widths, sampleSize=1000, dims=2, burnin=0, thin=1, confirm_region=False, **kwargs):
 
@@ -142,7 +142,6 @@ def mvslice(pdf, x0, widths, sampleSize=1000, dims=2, burnin=0, thin=1, confirm_
             area_thresh=10000)
         m.readshapefile("data/regions/UGA_adm0", "regions", drawbounds=True)
         for xy, info in zip(m.regions, m.regions):
-            poly = plt.Polygon(xy, facecolor=land, alpha=0.7, zorder=10)
             p = path.Path(xy)
 
     # get hyperrectangle
@@ -205,7 +204,7 @@ def mvslice(pdf, x0, widths, sampleSize=1000, dims=2, burnin=0, thin=1, confirm_
 
 
 
-# In[89]:
+# In[179]:
 
 get_ipython().magic(u'time')
 start_x = np.array([[0., 31.]])
@@ -213,55 +212,16 @@ rect_widths = np.array([10., 10.])
 slice_samples, _ = mvslice(k.pdf, start_x, rect_widths, sampleSize=100, burnin=10, thin=10, 
                            confirm_region=True)
 
-print slice_samples
-#slice_samples[:10,:]
+
+# In[180]:
+
+fig, ax = plot_map(outline_only=True)
+#pplt.scatter(ax, slice_samples[:1000,1], slice_samples[:1000,0], zorder=20, s=20, color='b', alpha=0.5) #bins=50, cmap=reds, zorder=17)
+ax.hist2d(slice_samples[:,1], slice_samples[:,0], cmap=reds, bins=25)
+fig.show()
 
 
-# In[90]:
-
-# def plot_map():
-#     fig = plt.gcf()
-#     fig.set_size_inches(12, 12)
-#     ax = plt.gca()
-    
-#     margin = 0.5
-#     m = Basemap(llcrnrlon=uganda_data.LONGITUDE.min() - margin,
-#                 llcrnrlat=uganda_data.LATITUDE.min() - margin,
-#                 urcrnrlon=uganda_data.LONGITUDE.max() + margin,
-#                 urcrnrlat=uganda_data.LATITUDE.max() + margin,
-#                 resolution='l',
-#                 area_thresh=10000)
-
-#     # add the land
-#     m.readshapefile("data/regions/UGA_adm1", "regions", drawbounds=True)
-#     for xy, info in zip(m.regions, m.regions):
-#         poly = plt.Polygon(xy, facecolor=land, alpha=0.7, zorder=10)
-#         ax.add_patch(poly)
-
-#     # add the water
-#     m.readshapefile("data/water/UGA_water_areas_dcw", "water", drawbounds=True)
-#     for xy, info in zip(m.water, m.water):
-#         poly = plt.Polygon(xy, facecolor=water, alpha=1, zorder=11)
-#         ax.add_patch(poly)
-
-#     # add the roads
-#     m.readshapefile("data/roads/Uganda_Roads", "roads", drawbounds=True, linewidth=2, color=roads, zorder=12)
-
-#     # add the roads
-#     #m.readshapefile("data/refugee/North_Uganda_IDP_Camp_July2009", "refugee", color=roads, zorder=13)
-    
-#     # add the events
-#     ax.scatter(uganda_data.LONGITUDE, uganda_data.LATITUDE, color=events, alpha=0.7, zorder=15)
-    
-#     return fig, ax
-
-fig, ax = plot_map()
-pplt.scatter(ax, slice_samples[:1000,1], slice_samples[:1000,0], zorder=20, s=20, color='b', alpha=0.5) #bins=50, cmap=reds, zorder=17)
-#ax.hist2d(slice_samples[:,0], slice_samples[:,1])
-#fig.show()
-
-
-# In[64]:
+# In[181]:
 
 def run_diagnostics(samples, function=None, plots=True):
     if plots:
@@ -351,7 +311,7 @@ def plot_diagnostics(samples):
     # Samples Autocorrelation
     plot_acorr(samples)
     
-def plot_traces(samples, sample_lim=1000):
+def plot_traces(samples, sample_lim=50):
     lens, dims = samples.shape
     figs, axes = plt.subplots(dims,1)
     
@@ -359,7 +319,7 @@ def plot_traces(samples, sample_lim=1000):
         pplt.plot(axes[d], np.arange(sample_lim), samples[:sample_lim,d])
     
 
-def plot_acorr(x_vals, maxlags=10):
+def plot_acorr(x_vals, maxlags=3):
     figs, axes = plt.subplots(1,2)
     
     # plot x autocorrelation
@@ -376,7 +336,7 @@ def plot_acorr(x_vals, maxlags=10):
     axes[1].acorr(x_vals[:,1]-np.mean(x_vals[:,1]),
                   normed=True,
                   usevlines=False,
-                  maxlags=1000,
+                  maxlags=maxlags,
                   color=c2,
                   alpha=0.8)
     
@@ -385,7 +345,7 @@ def plot_acorr(x_vals, maxlags=10):
     plt.show()
 
 
-# In[69]:
+# In[182]:
 
 # colors for run_diagnostics
 blues_rev = pplt.brewer2mpl.get_map('Reds', 'Sequential', 9, reverse=False).mpl_colormap
@@ -395,7 +355,7 @@ plot_map(outline_only=True)
 run_diagnostics(slice_samples)
 
 
-# In[5]:
+# In[171]:
 
 def getDistanceByHaversine(latitudes, longitudes):
     '''Haversine formula - give coordinates as a 2D numpy array of
@@ -424,13 +384,13 @@ def getDistanceByHaversine(latitudes, longitudes):
     return km
 
 
-# In[6]:
+# In[172]:
 
 # gets all pairwise distances
 w = getDistanceByHaversine(uganda_data.LATITUDE, uganda_data.LONGITUDE)
 
 
-# In[7]:
+# In[173]:
 
 # add a column that has a number of days from the
 # first event in our dataset to make the math easier
@@ -440,21 +400,60 @@ day_diff = lambda x: (x - start_day).days
 uganda_data['DAYS_FROM_START'] = map(day_diff, uganda_data.EVENT_DATE)
 
 
-# In[24]:
+# In[173]:
 
 
 
 
-# In[38]:
+# In[174]:
 
-k = sm.nonparametric.KDEMultivariate(uganda_data[['LATITUDE', 'LONGITUDE']], 'cc')
+# k = sm.nonparametric.KDEMultivariate(uganda_data[['LATITUDE', 'LONGITUDE']], 'cc')
 
-lats = np.linspace(uganda_data.LATITUDE.min(), uganda_data.LATITUDE.max(), 200)
-lons = np.linspace(uganda_data.LONGITUDE.min(), uganda_data.LONGITUDE.max(), 200)
+# lats = np.linspace(uganda_data.LATITUDE.min(), uganda_data.LATITUDE.max(), 200)
+# lons = np.linspace(uganda_data.LONGITUDE.min(), uganda_data.LONGITUDE.max(), 200)
 
-LA, LO = np.meshgrid(lats, lons)
+# LA, LO = np.meshgrid(lats, lons)
 
-plt.contourf(LA, LO, k.pdf([LA.ravel(), LO.ravel()]).reshape(200, 200).T)
+# plt.contourf(LA, LO, k.pdf([LA.ravel(), LO.ravel()]).reshape(200, 200).T)
+
+
+# In[176]:
+
+dt = uganda_data[['EVENT_DATE', 'FATALITIES']]
+
+by = lambda x: lambda y: getattr(y, x)
+dri = dt.set_index('EVENT_DATE', inplace=False)
+fatality_df = dri.groupby([by('year'), by('month')]).count()
+fatality_df['sum'] = dri.groupby([by('year'), by('month')]).sum()
+
+def add_lags(orig_df, num_lags):
+    df = orig_df.copy()
+    
+    for i in range(1, num_lags+1):
+        col_name = 'prev{}sum'.format(i)
+        fat_name = 'prev{}fat'.format(i)
+        
+#         df[col_name] = np.zeros(df.shape[0])
+#         df[col_name][i:] = df['sum'][:-i]
+        
+        df[fat_name] = np.zeros(df.shape[0])
+        df[fat_name][i:] = df['FATALITIES'][:-i]
+        
+    return df.iloc[i:,:]
+
+
+fatality_df = add_lags(fatality_df, 5)
+fatality_df
+
+
+# In[175]:
+
+
+
+
+# In[175]:
+
+
 
 
 # In[ ]:
