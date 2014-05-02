@@ -1,0 +1,128 @@
+\documentclass{article} % For LaTeX2e
+\usepackage{nips13submit_e,times}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{breakurl}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{fancyvrb}
+\usepackage{booktabs}
+\usepackage[font=footnotesize,labelfont=bf]{caption}
+
+\bibliographystyle{ieeetr}
+
+\nipsfinalcopy
+
+\hyphenation{in-de-pen-dent}
+
+\title{AM 207: Project Proposal}
+ 
+\author{Isaac M.~Slavitt\\
+Institute for Applied Computational Science\\
+Harvard University\\
+52 Oxford Street\\
+Cambridge, Massachusetts}
+
+\begin{document} 
+ 
+\maketitle 
+
+\section*{Traveling Salesman Problem}
+
+\subsection*{Problem statement}
+
+One question of particular interest that we can tackle using techniques from the class is how to route emergency aid
+to locations where it is needed.  It is all well and good to use our \emph{predictive} methods to anticipate where
+conflicts may occur, but decision makers in a real world scenario would also desire \emph{prescriptive} tools to help
+carry out their mission. For concreteness, let's postulate a Red Cross medical or food supply caravan that originates
+from the organization's in-country headquarters. This caravan wishes to visit all $n$ emergent locations in order to
+deliver needed supplies. They wish to do so in the most efficient manner possible.
+
+\subsection*{Mathematical secification}
+
+This is fundamentally an optimization problem, and one that is well known. Here is the traditional convex optimization
+specification of the problem:
+
+\begin{align*}
+\min &\sum_{i=0}^n \sum_{j\ne i,j=0}^nc_{ij}x_{ij} &&  \\
+\mathrm{s.t.} & \\
+	& x_{ij} \in \{0, 1\} && i,j=0, \cdots, n \\
+	& \sum_{i=0,i\ne j}^n x_{ij} = 1 && j=0, \cdots, n \\
+	& \sum_{j=0,j\ne i}^n x_{ij} = 1 && i=0, \cdots, n \\
+	&u_i-u_j +nx_{ij} \le n-1 && 1 \le i \ne j \le n
+\end{align*}
+
+This should be immediately recognizable as the traveling salesman problem (TSP), an integer linear program (ILP) where:
+
+\begin{itemize}
+  \item $x_{ij}$ is a binary decision variable indicating whether we go from location $i$ to location $j$.
+  \item $c_{ij}$ is the distance between location $i$ and location $j$.
+  \item The objective function is the sum of the distances for routes that we decide to take.
+  \item The constraints ensure that all locations are visited once and only once.
+\end{itemize}
+
+The problem, of course, is that brute force solution of the TSP is $\mathcal{O}$$(n!)$. Traditional, deterministic
+algorithm approaches such as branch-and-bound or branch-and-cut are still impractical for larger numbers of nodes.
+In many cases, exhaustive search for global optimality is not even particularly helpful as long as the solution
+found is good enough. We will use simulated annealing (SA) to get acceptable solutions to the TSP (c.f. the class lectures
+and homework problem). 
+
+\subsection*{Proposed approach (\emph{The Prestige})}
+
+Hold on to your butts, that's not all. Because we did something similar in class, we will complicate
+this problem a bit. Consider a mash-up of two NP-hard problems: the traveling salesman problem and the
+knapsack problem. ``What? You guys are crazy.'' Maybe, but we're doing it live.
+
+We will make the problem double-plus-NP-hard by making this a multi-objective optimization problem
+where \emph{the contents of the aid trucks} also have an optimization component. Therein lies
+the knapsack problem: subject to a volume or weight constraint, and given that different locations
+might have very different needs such as food, vaccinations, or emergent medical supplies, \emph{which
+supplies do we pack on the trucks}?  This may be a toy problem, but if so it is an inherently unsafe
+toy like a BB gun --- you could put your eye out.
+
+Here's the unbounded\footnote{Often, this problem is formulated such that you can only bring one of
+each item, but that doesn't make sense here. We want to be able to bring as many types of each type
+of aid as we think necessary, and we'll assume that as many as desired are available to load on the
+trucks before starting out from HQ.} version of the knapsack problem:
+
+\begin{align*}
+\max &\sum_{i=1}^n v_i x_i &&  \\
+\mathrm{s.t.} & \\
+    & x_i \in \mathbb{Z} \\
+    & x_i \geq 0 \\
+	& \sum_{i=1}^n w_ix_i \leq W
+\end{align*}
+
+In this formulation:
+
+\begin{itemize}
+  \item $x_{i}$ is a zero or positive integer decision variable indicating how many units of item $i$
+        we load on the truck.
+  \item $v_i$ is the utility we get from bringing along item $i$.
+  \item $w_i$ is the weight of item $i$.
+  \item $W$ is the maximum weight the truck can carry.
+\end{itemize}
+
+Moreover, if time permits, we will also explore some other stochastic algorithms often used to
+optimize the TSP including Tabu search (a sort of randomized branch-and-bound) and ant colony
+optimization (based on the biological analogy of ant-like random walks with attractive
+properties for walks that are better than others).
+
+
+\section*{Literature Review}
+
+We have reviewed the relevant literature on this problem and found some promising sources. First of
+all, a similar effort was made by Sebastian Schutte in his 2010 master's thesis. In it, he used the same ACLED data set in order to predict the occurence of violent conflicts in several African nations. While helpful for us as background information, his focus was on the political science aspect. It seems that he used Monte Carlo methods for simulation, but the methods are not described and our sense is that it was probably specified as a problem for \verb+BUGS+'s black box.
+
+Additionally, we found a helpful paper from the Journal of Statistics Education describing this data set and its potential didactic use for class projects. It was helpful in its description of interesting questions that made be answered by using this ACLED data in conjunction with certain other sources.
+
+Finally, we have reviewed the relevant sections of a number of canonical sources for problems such as these including Gelman and Rubin, Gill, and Bishop.
+
+% \bibliography{proposal}
+
+\end{document} 
+
