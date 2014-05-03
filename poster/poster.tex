@@ -200,13 +200,9 @@ might have very different needs such as food, vaccinations, or emergent medical 
 \mathrm{s.t.} \; \; & x_i \in \mathbb{Z}, \; x_i \geq 0 \; \sum_{i=1}^n w_ix_i \leq W
 \end{align*}
 
-\noindent In this formulation, $x_{i}$ is a zero or positive integer decision variable indicating how many units of item $i$ we load on the truck, $v_i$ is the utility we get from bringing along item $i$, $w_i$ is the weight of item $i$, $W$ is the maximum that can be loaded. We use simulated annealing (SA) to get acceptable solutions to the TSP. Now what we give the SA algorithm to minimize is a \textbf{loss function} that heavily penalizes running short of supplies. Figure \ref{fig:routing-reloading} shows this problem integrated with the TSP.
+\noindent In this formulation, $x_{i}$ is a zero or positive integer decision variable indicating how many units of item $i$ we load on the truck, $v_i$ is the utility we get from bringing along item $i$, $w_i$ is the weight of item $i$, $W$ is the maximum that can be loaded. We use simulated annealing (SA) to get acceptable solutions to the TSP. The SA algorithm is minimizing is a \textbf{loss function} that heavily penalizes running short of supplies. Figure \ref{fig:routing-reloading} shows this problem integrated with the TSP.
 
 \vspace{-6mm}
-
-\subsection*{Locating HQ optimally for efficient reloading}
-
-Although we have now optimized our route so that we never run out of supplies, we should ask whether our HQ could be more conveniently located. We can answer this by treating the reload location as another set of parameters and continuing to sample HQ locations using SA.
 
 \begin{figure}[H]
   \centering
@@ -217,26 +213,21 @@ Although we have now optimized our route so that we never run out of supplies, w
     \label{fig:routing-reloading-hq-optimal}
   \end{subfigure}~\begin{subfigure}[b]{0.5\columnwidth}
     \centering
-		\begin{tabular}{lrr}
-		\toprule
-		{} &        $\ell2$ &     lasso \\
-		\midrule
-		education & -0.0098 &  0.0000 \\
-		female    & -0.0453 &  0.0000 \\
-		married   & -0.1028 &  0.0000 \\
-		minority  & -0.0626 &  0.0000 \\
-		tis       & -0.0317 & -0.0547 \\
-		\bottomrule
-		\end{tabular}
-
-	\vspace{1in}
-    \caption{Table of results from a typical 20,000 iteration run.}
-    \label{tab:results}
+    \centering
+    \includegraphics[width=\textwidth]{../write-up/figures/comparative-loss-plot}
+    \caption{Example loss function optimization convergence for $n=50$.}
+    \label{fig:comparative-loss-plot}
   \end{subfigure}
   \caption{Optimizing aid delivery routing with reloading.}
 \end{figure}
 
-\noindent Figure \ref{fig:routing-reloading-hq-optimal} shows the TSP/Knapsack optimized once again, this time using a the optimal HQ location we have uncovered through sampling.
+\vspace{-15mm}
+
+\subsection*{Locating HQ optimally for efficient reloading}
+
+\vspace{-6mm}
+
+Although we have now optimized our route so that we never run out of supplies, we should ask whether our HQ could be more conveniently located. We can answer this by treating the reload location as another set of parameters and continuing to sample HQ locations using SA. Figure \ref{fig:routing-reloading-hq-optimal} shows the TSP/Knapsack optimized once again, this time using a the optimal HQ location, while \ref{fig:comparative-loss-plot} compares the loss function as each method converges to its best possible configuration.
 
 \vspace{-6mm}
 

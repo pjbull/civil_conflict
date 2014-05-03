@@ -146,26 +146,43 @@ class Route(object):
         return new
 
 
+class TSPRoute(Route):
+    """ don't revisit HQ at all for reloading """
+    
+    def perturb(self, perm, max_hq_stops=12, p_add_hq_stop=0.05, p_remove_hq_stop=0.1):
+        """ propose a new solution by perturbing current arrangement """
+
+        assert perm[0] == 0  # make sure we're starting at HQ
+        new = perm.copy()
+        
+        non_hq_indices = np.arange(1, perm.size)
+
+        # choose two random indices to switch and switch them
+        random_indices = np.random.choice(non_hq_indices, size=2, replace=False)
+        new[random_indices] = new[random_indices][::-1]
+        
+        return new
+
+
 class HqLocator(object):
     """ class which also moves HQ around """
 
-    def __init__(self, n=100, domain=(0, 50), configuration=None, proposed_location=None):
+    def __init__(self, n=100, x_domain=(29., 36.), y_domain=(-1., 4), proposed_location=None):
 
         self.n = n
-        self.domain = domain
+        self.x_domain = x_domain
+        self.y_domain = y_domain
         self.draw_new_random_cities()
 
-        if proposed_location is not None:
+        self._proposed_location = proposed_location
+        if proposed_location is None:
             self._proposed_location = np.array([5, 5])
-
-        if configuration:
-            self.n = configuration.n
-            self.domain = configuration.domain
-            self.cities = configuration.cities
 
     def draw_new_random_cities(self):
         """ draw new configuration of cities from our distribution """
-        self.cities = np.random.uniform(*self.domain, size=(self.n, 2))
+        xs = np.random.uniform(*self.x_domain, size=self.n)
+        ys = np.random.uniform(*self.y_domain, size=self.n)
+        self.cities = np.hstack((xs, ys))
 
     def loss(self, hq_location):
         dists = np.array([haversine(self.cities[i, :], hq_location)
@@ -184,9 +201,21 @@ class HqLocator(object):
         if np.random.rand() < 0.2:
             self.draw_new_random_cities()
 
-        dmin, dmax = self.domain
-
-        self._proposed_location += np.random.uniform(-1, 1, size=2)
-        self._proposed_location = np.clip(self._proposed_location, dmin, dmax)
+        dmin, dmax = self.x_domain
+        dist = (self.x_domain[1] - self.x_domain[0])/20
+        self._proposed_location[0] += np.random.uniform(-dist, dist)
+        self._proposed_location[0] = np.clip(self._proposed_location[0], dmin, dmax)
+        
+        dmin, dmax = self.y_domain
+        dist = (self.y_domain[1] - self.y_domain[0])/20
+        self._proposed_location[1] += np.random.uniform(-dist, dist)
+        self._proposed_location[1] = np.clip(self._proposed_location[1], dmin, dmax)
 
         return self._proposed_location
+
+    
+class HqLocatorUganda(HqLocator):
+    """ sample cities from the Uganda distribution """
+
+    def draw_new_random_cities(self):
+        self.cities = slicer_api(*self.x_domain, size=(self.n, 2))
