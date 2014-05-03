@@ -15,7 +15,7 @@
 % \documentstyle[nips13submit_09,times,art10]{article} % For LaTeX 2.09
 \bibliographystyle{ieeetr}
 
-\title{Modeling Civil Conflict and Aid Delivery in Uganda}
+\title{Modeling and Simulating Political Violence and Optimizing Aid Distribution in Uganda}
 
 
 \author{
@@ -144,7 +144,7 @@ When slice sampling, there are a number of parameter choices that are imporant. 
 \end{figure}
 
 \subsection*{Events in time}
-As a modeling assumption, we seperate the dimensions of space and time as being independent. To model events in time across the country, we use an autoregressive Poisson-GLM. While standard autoregressive models create a linear relation between a future value and a previous value, the Poisson GLM let's us have a linear relation between previous data and the mean of a Poisson distribution. This will allow us to retain the probabilistic interpretation of the events in time.
+As a modeling assumption, we seperate the dimensions of space and time as being independent. To model events in time across the country, we use an autoregressive Poisson GLM. While standard autoregressive models create a linear relation between a future value and a previous value, the Poisson GLM lets us have a linear relation between previous data and the mean of a Poisson distribution. This will allow us to retain the probabilistic interpretation of the events in time.
 
 In order to model events using a Poisson distribution, we must discretize our time dimension. We opted for month-long increments. The thinking behind this decision is that we want to use sample draws to run our aid optimizations. If a model like this were to be used in planning for future conflicts, having a month-long window for a plan seems like a good balance between precision and logistic concerns.
 

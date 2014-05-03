@@ -31,7 +31,7 @@
 \renewcommand\@maketitle{%
 \null									%Sets position marker
 {
-\color{headingcol}\sffamily\VERYHuge		%Set title font and colour
+\color{headingcol}\sffamily\Huge		%Set title font and colour
 \@title \par}%
 \vskip 0.6em%
 {
@@ -45,7 +45,7 @@
 }
 \makeatother
 
-\title{Modeling Civil Conflict and \\Aid Delivery in Uganda}
+\title{Modeling and Simulating Political Violence\\and Optimizing Aid Distribution in Uganda}
 
 \author{Peter Bull \& Isaac Slavitt\\
 Harvard University - AM207}
@@ -96,7 +96,7 @@ Using MCMC techniques, we model civil conflict in Uganda and optimize the limite
 
 \noindent The data comes from ACLED (Armed Conflict Location and Event Data Project), which is a dataset with locations, dates, fatalities, motivation, actors involved, and other information about civil conflicts in Africa. Their collection of data on Uganda covers 1997-2013, and they have a real-time tracker of events reported in 2014.\cite{ACLED}
 
-\vspace{-10mm}
+\vspace{-6mm}
 
 \section*{Modeling events in space}
 
@@ -120,20 +120,26 @@ We treat the entire country of Uganda as a probability distribution from which g
   \caption{Discretizing and sampling from the conflict distribution.}
 \end{figure}
 
-
 \columnbreak
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%Column 2
 
+\vspace{-10mm}
+
+\section*{Modeling events in time}
+
+\vspace{-6mm}
+
+To model events in time, we use an autoregressive Poisson GLM. The Poisson GLM lets us have a linear relation between previous data and the mean of a Poisson distribution. This will allow us to retain the probabilistic interpretation of the events in time.
 
 \begin{figure}[H]
 \centering
-\includegraphics[scale=0.75]{../write-up/figures/poisson-regression.png}
+\includegraphics[scale=1]{../write-up/figures/poisson-regression.png}
 \caption{Poisson regression.}
-\label{bosgraph}
+\label{fig:poisson}
 \end{figure}
 
-\vspace{-15mm}
+\noindent In order to model events using a Poisson distribution, we must discretize our time dimension. We opted for month-long increments. The thinking behind this decision is that we want to use sample draws to run our aid optimizations. If a model like this were to be used in planning for future conflicts, having a month-long window for a plan seems like a good balance between precision and logistic concerns.
 
 \section*{Optimizing Aid Delivery}
 
@@ -160,30 +166,19 @@ Let's postulate a Red Cross medical or food supply caravan that originates from 
 
 \begin{figure}[H]
   \centering
-  \begin{subfigure}[b]{0.49\columnwidth}
+  \begin{subfigure}[b]{0.5\columnwidth}
     \centering
-    \includegraphics[width=\textwidth]{../write-up/figures/uganda}
+    \includegraphics[width=\textwidth]{../write-up/figures/routing-vanilla-tsp}
     \caption{Visiting all cities without reloading.}
-    \label{fig:a1}
+    \label{fig:routing-vanilla-tsp}
   \end{subfigure}~\begin{subfigure}[b]{0.5\columnwidth}
     \centering
     \includegraphics[width=\textwidth]{../write-up/figures/routing-reloading}
     \caption{Routing with reloading HQ in capital city Kampala.}
-    \label{fig:a2}
+    \label{fig:routing-reloading}
   \end{subfigure}
-  \caption{Optimizing aid delivery routing with reloading.}
+  \caption{Optimizing aid delivery routing using one random sample of conflicts.}
 \end{figure}
-
-\vspace{-15mm}
-
-\subsection*{Packing the aid truck --- adding in Knapsack Problem}
-
-\vspace{-6mm}
-
-We extend the TSP into a multi-objective optimization problem
-where \emph{the contents of the aid trucks} also have an optimization component. Therein lies
-the knapsack problem: subject to a volume or weight constraint, and given that different locations
-might have very different needs such as food, vaccinations, or emergent medical supplies, \emph{which supplies do we pack on the trucks}?  Often, this problem is formulated such that you can only bring one of each item, but that doesn't make sense here. We want to be able to bring as many types of each type of aid as we think necessary, and we'll assume that as many as desired are available to load on the trucks before starting out from HQ. Here's the unbounded version of the knapsack problem:
 
 \columnbreak
 
@@ -191,12 +186,21 @@ might have very different needs such as food, vaccinations, or emergent medical 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%Column 3
 
+\subsection*{Packing the aid truck --- adding in Knapsack Problem}
+
+\vspace{-6mm}
+
+We extend the TSP into a multi-objective optimization problem
+where \textbf{the contents of the aid trucks} also have an optimization component. In the real world, we can't pack unlimited supplies for an aid delivery trip. Therein lies
+the knapsack problem: subject to a volume or weight constraint, and given that different locations
+might have very different needs such as food, vaccinations, or emergent medical supplies, \textbf{which supplies do we pack on the trucks}?  Often, this problem is formulated such that you can only bring one of each item, but that doesn't make sense here. We want to be able to bring as many types of each type of aid as we think necessary, and we'll assume that as many as desired are available to load on the trucks before starting out from HQ. Here's the unbounded version of the knapsack problem:
+
 \begin{align*}
 \max &\sum_{i=1}^n v_i x_i &&  \\
 \mathrm{s.t.} \; \; & x_i \in \mathbb{Z}, \; x_i \geq 0 \; \sum_{i=1}^n w_ix_i \leq W
 \end{align*}
 
-\noindent In this formulation, $x_{i}$ is a zero or positive integer decision variable indicating how many units of item $i$ we load on the truck, $v_i$ is the utility we get from bringing along item $i$, $w_i$ is the weight of item $i$, $W$ is the maximum that can be loaded. We use simulated annealing (SA) to get acceptable solutions to the TSP. Now what we give the SA algorithm to minimize is a \textbf{loss function} that heavily penalizes running short of supplies.
+\noindent In this formulation, $x_{i}$ is a zero or positive integer decision variable indicating how many units of item $i$ we load on the truck, $v_i$ is the utility we get from bringing along item $i$, $w_i$ is the weight of item $i$, $W$ is the maximum that can be loaded. We use simulated annealing (SA) to get acceptable solutions to the TSP. Now what we give the SA algorithm to minimize is a \textbf{loss function} that heavily penalizes running short of supplies. Figure \ref{fig:routing-reloading} shows this problem integrated with the TSP.
 
 \vspace{-6mm}
 
@@ -210,7 +214,7 @@ Although we have now optimized our route so that we never run out of supplies, w
     \centering
     \includegraphics[width=\textwidth]{../write-up/figures/routing-reloading-hq-optimal}
     \caption{Routing with reloading from optimal HQ.}
-    \label{fig:b1}
+    \label{fig:routing-reloading-hq-optimal}
   \end{subfigure}~\begin{subfigure}[b]{0.5\columnwidth}
     \centering
 		\begin{tabular}{lrr}
@@ -227,12 +231,14 @@ Although we have now optimized our route so that we never run out of supplies, w
 
 	\vspace{1in}
     \caption{Table of results from a typical 20,000 iteration run.}
-    \label{fig:b2}
+    \label{tab:results}
   \end{subfigure}
   \caption{Optimizing aid delivery routing with reloading.}
 \end{figure}
 
-\vspace{-15mm}
+\noindent Figure \ref{fig:routing-reloading-hq-optimal} shows the TSP/Knapsack optimized once again, this time using a the optimal HQ location we have uncovered through sampling.
+
+\vspace{-6mm}
 
 \section*{Conclusions}
 
@@ -240,9 +246,9 @@ Although we have now optimized our route so that we never run out of supplies, w
 
 In each part of this problem, analytical solutions either do not exist (e.g. in simulation) or are computationally infeasible (e.g. in the TSP/Knapsack optimizations).  We found that using a metaheuristic such as SA converged on robust solutions in relatively short order.  Future research might include adding many more constraints or twists to the problem, and trying different stochastic optimization techniques such as genetic optimization, Tabu search, or ant colony optimization.
 
-\vfill
+\vspace{-6mm}
 
-\bibliographystyle{plain}
+\bibliographystyle{ieeetr}
 \bibliography{poster}
 
 \end{multicols}

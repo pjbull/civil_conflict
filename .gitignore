@@ -64,6 +64,8 @@ docs/_build/
 *.synctex.gz
 *.log
 *.out
+*.bbl
+*.blg
 
 
 
