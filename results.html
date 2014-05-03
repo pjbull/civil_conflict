@@ -16,16 +16,11 @@
   <!-- Custom styles for this template -->
   <link href="http://getbootstrap.com/examples/jumbotron-narrow/jumbotron-narrow.css" rel="stylesheet">
 
-  <!-- Font -->
-  <link href='http://fonts.googleapis.com/css?family=Crimson+Text:400,400italic,700&v2' rel='stylesheet' type='text/css'>
-
   <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
       <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
       <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
       <![endif]-->
-
-      <link href="style.css" rel="stylesheet">
 
       <script type="text/x-mathjax-config">
         MathJax.Hub.Config({
@@ -50,15 +45,110 @@
           </div>
 
           <div class="container">
-            <h2>Modeling Civil Conflict and Aid Delivery in Uganda</h2>
+            <h2>Modeling and Simulating Political Violence and Optimizing Aid Distribution in Uganda</h2>
             <h3 class="text-muted">Results</h3>
           </div>
 
           <div class="row marketing">
             <div class="col-md-12">
-              <h4>Setup</h4>
+              <h4>Modeling events in space</h4>
 
-              <p>Placeholder.</p>
+              <p>We treat the entire country of Uganda as a probability distribution from which geospatial conflict events could be sampled.  We took historical conflict location data from the entire ACLED data set and smoothed it using a Matérn covariance function.  This estimate (i.e., the empirical distribution of the conflict data), has a complex functional form which makes it challenging to sample from. However, if we discretize the problem it is simple for a given coordinate to get the probability of an event. Given this property of our smoothed data, we can apply MCMC sampling techniques to generate samples from this probability distribution.</p>
+
+              <div class="panel panel-default">
+                <div class="panel-body">
+                  <img src="img/1000-slice-samples.png" width="600" />
+                </div>
+                <div class="panel-footer">Blue dots are samples from the empirical distribution.</div>
+              </div>
+
+              <div class="panel panel-default">
+                <div class="panel-body">
+                  <img src="img/histogram.png" width="600" />
+                </div>
+                <div class="panel-footer">2D histogram of slice samples from the empirical distribution.</div>
+              </div>
+
+              <h4>Modeling events in time</h4>
+
+              <p>To model events in time, we use an autoregressive Poisson GLM. The Poisson GLM lets us have a linear relation between previous data and the mean of a Poisson distribution. This will allow us to retain the probabilistic interpretation of the events in time.</p>
+
+              <p>In order to model events using a Poisson distribution, we must discretize our time dimension. We opted for month-long increments. The thinking behind this decision is that we want to use sample draws to run our aid optimizations. If a model like this were to be used in planning for future conflicts, having a month-long window for a plan seems like a good balance between precision and logistics concerns.</p>
+
+              <div class="panel panel-default">
+                <div class="panel-body">
+                  <img src="img/poisson-regression.png" width="600" />
+                </div>
+                <div class="panel-footer">Poisson regression.</div>
+              </div>
+
+              <h4>Optimizing Aid Delivery</h4>
+
+              <h5>The Traveling Salesman Problem</h5>
+
+              <p>Let's postulate a Red Cross medical or food supply caravan that originates from the organization's in-country headquarters. This caravan wishes to visit all $n$ emergent locations in order to deliver needed supplies in the most efficient manner possible. Here is the traditional convex optimization specification of the problem:</p>
+
+              \begin{align*}
+              \min &\sum_{i=0}^n \sum_{j\ne i,j=0}^nc_{ij}x_{ij} &&  \\
+              \mathrm{s.t.} \; \; & x_{ij} \in \{0, 1\} && i,j=0, \cdots, n \\
+              & \sum_{i=0,i\ne j}^n x_{ij} = 1 && j=0, \cdots, n \\
+              & \sum_{j=0,j\ne i}^n x_{ij} = 1 && i=0, \cdots, n \\
+              &u_i-u_j +nx_{ij} \le n-1 && 1 \le i \ne j \le n
+              \end{align*}
+
+              <p>Where $x_{ij}$ is a binary decision variable indicating whether we go from location $i$ to location $j$, $c_{ij}$ is the distance between location $i$ and location $j$, the objective function is the sum of the distances for routes that we decide to take, and the final constraint ensures that all locations are visited once and only once.</p>
+
+              <div class="panel panel-default">
+                <div class="panel-body">
+                  <img src="img/routing-vanilla-tsp.png" width="600" />
+                </div>
+                <div class="panel-footer">Visiting all cities without reloading supplies.</div>
+              </div>
+
+              <h5>Packing the aid truck &mdash; adding in Knapsack Problem</h5>
+
+              <p>We extend the TSP into a multi-objective optimization problem where <strong>the contents of the aid truck</strong> also has an optimization component. In the real world, we can't pack unlimited supplies for an aid delivery trip. Therein lies the knapsack problem: subject to a volume or weight constraint, and given that different locations might have very different needs such as food, vaccinations, or emergent medical supplies, <strong>which supplies do we pack on the trucks</strong>?  Often, this problem is formulated such that you can only bring one of each item, but that doesn't make sense here. We want to be able to bring as many types of each type of aid as we think necessary, and we'll assume that as many as desired are available to load on the trucks before starting out from HQ. Here's the unbounded version of the knapsack problem:</p>
+
+              \begin{align*}
+              \max &\sum_{i=1}^n v_i x_i &&  \\
+              \mathrm{s.t.} & \\ 
+              & x_i \in \mathbb{Z} \\
+              & x_i \geq 0 \\
+              & \sum_{i=1}^n w_ix_i \leq W
+              \end{align*}
+
+              <p>In this formulation, $x_{i}$ is a zero or positive integer decision variable indicating how many units of item $i$ we load on the truck, $v_i$ is the utility we get from bringing along item $i$, $w_i$ is the weight of item $i$, $W$ is the maximum that can be loaded. We use simulated annealing (SA) to get acceptable solutions to the TSP. The SA algorithm is minimizing is a <strong>loss function</strong> that heavily penalizes running short of supplies. The following figure shows this problem integrated with the TSP.</p>
+
+              <div class="panel panel-default">
+                <div class="panel-body">
+                  <img src="img/routing-reloading.png" width="600" />
+                </div>
+                <div class="panel-footer">Routing with reloading HQ in capital city Kampala.</div>
+              </div>
+
+              <h5>Locating HQ optimally for efficient reloading</h5>
+
+              <p>Although we have now optimized our route so that we never run out of supplies, we should ask whether our HQ could be more conveniently located. We can answer this by treating the reload location as another set of parameters and continuing to sample HQ locations using SA. The following figure shows the TSP/Knapsack optimized once again, this time using a the optimal HQ location.</p>
+
+              <div class="panel panel-default">
+                <div class="panel-body">
+                  <img src="img/routing-reloading-hq-optimal.png" width="600" />
+                </div>
+                <div class="panel-footer">Routing with reloading from optimal HQ.</div>
+              </div>
+
+              <p>Let's compare the loss function as each method converges to its best possible configuration:</p>
+
+              <div class="panel panel-default">
+                <div class="panel-body">
+                  <img src="img/comparative-loss-plot.png" width="600" />
+                </div>
+                <div class="panel-footer">Example loss function optimization convergence for $n=50$.</div>
+              </div>
+
+              <h4>Conclusions</h4>
+
+              <p>In each part of this problem, analytical solutions either do not exist (e.g. in the distribution of events) or are computationally infeasible (e.g. in the TSP/Knapsack optimizations).  We found that using a metaheuristic such as SA converged on robust solutions in relatively short order.  Future research might include adding many more constraints or twists to the problem, and trying different stochastic optimization techniques such as genetic optimization, Tabu search, or ant colony optimization.</p>
 
             </div>
           </div>
