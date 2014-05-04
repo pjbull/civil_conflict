@@ -53,10 +53,10 @@ Cambridge, MA 02139 \\
 \maketitle
 
 \begin{abstract}
-Using MCMC techniques, we model civil conflict in Uganda and optimize the limited relief aid that can be provided in these scenarios. We describe a method to simulate civil conflict events in space and time given historical data about these events. We also optimize the distribution of limited aid resources to refugees from these crises. Modeling aid delivery as a combination of the traveling salesman problem and the knapsack algorithm --- two NP-hard problems --- we find acceptable solutions using stochastic metaheuristics.
+Using MCMC techniques, we model civil conflict in Uganda. We describe a method to simulate civil conflict events in space and time given historical data about these events. We also optimize the delivery of humanitarian aid as a combination of the traveling salesman problem and the Knapsack problem --- two NP-hard problems --- we find acceptable solutions using stochastic metaheuristics.
 \end{abstract}
 
-\section*{The Data}
+\section{Background}
 
 The data comes from ACLED (Armed Conflict Location and Event Data Project), which is a dataset with locations, dates, fatalities, motivation, actors involved, and other information about civil conflicts in Africa. Their collection of data on Uganda covers 1997-2013, and they have a real-time tracker of events reported in 2014.\cite{ACLED} The need for an understanding of these patterns of conflict is clear, as ACLED notes:
 
@@ -83,7 +83,7 @@ This dataset codes the dates and locations of all reported political violence ev
 \end{table}
 
 
-For Uganda, the dataset contains around 4,500 observations of civil violence. Each observation includes the data, location, an quantified estimate for how precise these measures are, a number of fatalities for the event, and the actors involved. Figure \ref{fig:map-points} shows these conflicts scattered on a political map of Uganda.
+In this project, we will focus on the Republic of Uganda, for which the dataset contains around 4,500 observations of civil violence. Each observation includes the date, geographic location, event type, number of fatalities for the event, actors involved and a meta-measure which estimates how precise these measures are. Figure \ref{fig:map-points} shows these conflicts scattered on a political map of Uganda.
 
 \begin{figure}
   \centering
@@ -103,13 +103,13 @@ For Uganda, the dataset contains around 4,500 observations of civil violence. Ea
 \end{figure}
 
 
-\section*{Modeling civil conflict}
+\section{Modeling civil conflict}
 
-\subsection*{Events in space}
+\subsection{Events in space}
 
-The events of violence and civil conflict that are available from the ACLED dataset are coded with both a latitude and a longitude. One assumption we make is that these events are distributed due to underlying causes such as population centers, road access, historical land ownership, and other features that make conflicts more or less likely. It is difficult to get the data and create a generative model for these probabilities, so we make the assumption that the distribution of the data is representative of these factors. In effect, we treat the entire country of Uganda as a probability distribution from which geospatial conflict events could be sampled.  We took historical conflict location data from the entire ACLED data set and smoothed it using a Mat\'{e}rn covariance function.  Figure \ref{fig:map-smoothed} shows this smoothing applied to the same conflicts depicted in \ref{fig:map-points}.
+The violence and civil conflict events described in the ACLED dataset are coded with both a latitude and a longitude. One assumption we make is that these events are distributed due to underlying causes such as population centers, road access, historical land ownership, and other features that make conflicts more or less likely. It is difficult to directly create a generative model for these probabilities, so we will make the further assumption that the distribution of the data already incorporates and is representative of these factors. In effect, we treat the entire country of Uganda as a probability distribution from which geospatial conflict events could be sampled.  We took historical conflict location data from the entire ACLED data set and smoothed it using a Mat\'{e}rn covariance function.  Figure \ref{fig:map-smoothed} shows this smoothing applied to the same conflicts depicted in \ref{fig:map-points}.
 
-We used this smooth as a kernel-density esitmate. This estimate (i.e., the empirical distribution of the conflict data), has a complex functional form which makes it challenging to sample from. However, it is simple for a given coordinate to get the probability of an event. Given this property of our smooth, we can apply monte-carlo sampling techniques to generate samples from this probability distribution. Visualizing the distribution, we see that it is multi-modal with regions of low density between the modes. Because of these properties, we opted to use slice sampling to generate draws from the distribution. Figure \ref{fig:sampled-conflicts} shows the first 1,000 samples from this probability distribution (note, as some point we could write code to throw away samples that occur over water or outside of country boundaries). Figure \ref{fig:histogram} shows the distribution of the samples as a two-dimensional histogram.
+We used this smooth function as a kernel-density esitmate (KDE). This estimate (i.e., the empirical distribution of the conflict data), has a complex functional form which makes it challenging to sample from. However, for any given coordinate it is quite simple to get the probability of an event. Given this property of our KDE, we can apply Monte Carlo sampling techniques to generate samples from this probability distribution. Visualizing the distribution, we can see that it is multi-modal with regions of low density between the modes. Because of these properties, we opted to use slice sampling to generate draws from the distribution. Figure \ref{fig:sampled-conflicts} shows the first 1,000 samples from this probability distribution.\footnote{We throw away samples that occur over water or outside of country boundaries.} Figure \ref{fig:histogram} shows the distribution of the samples as a two-dimensional histogram.
 
 \begin{figure}
   \centering
@@ -124,9 +124,10 @@ We used this smooth as a kernel-density esitmate. This estimate (i.e., the empir
     \caption{2d histogram of slice samples from the empirical distribution.}
     \label{fig:histogram}
   \end{subfigure}
+  \caption{Sampling from the empirical distribution.}
 \end{figure}
 
-When slice sampling, there are a number of parameter choices that are imporant. We want to choose our rectangle widths, burn-in, and thinning parameters appropriately. In testing, a thinning value of 10 reduced autocorrelation to less than 0.1 at a time lag of 1. We can see this result in Figure \ref{fig:autocorr}. We used the Gelman-Rubin potential scale reduction factor \cite{Gelman-Rubin} to determine if we were mixing well. Generally, a value less than 1.1 indicates good mixing. In both of our dimensions, the Gelman-Rubin statistic was less than this threshold. We also calculated the Gewecke statistic, which is used to indicate convergence. A value less than 2 indicates convergence and for our draws, this statisic was $\ll$ 1. We can also examine convergence by looking at the trace plots for the samples. As we see in Figure \ref{fig:trace} these appear stationary.
+When slice sampling, there are a number of parameter choices that are imporant. We want to choose our rectangle widths, burn-in, and thinning parameters appropriately. In testing, a thinning value of 10 reduced autocorrelation to less than 0.1 at a time lag of 1. We can see this result in Figure \ref{fig:autocorr}. We used the Gelman-Rubin potential scale reduction factor\cite{Gelman-Rubin} to determine if we were observing favorable mixing. Generally, a value less than 1.1 indicates good mixing. In both of our dimensions, the Gelman-Rubin statistic was less than this threshold. We also calculated the Geweke statistic, which is used to indicate convergence. A value less than 2 indicates convergence and for our draws, this statistic was $\ll$ 1. We can also examine convergence by looking at the trace plots for the samples. As we see in Figure \ref{fig:trace} these appear stationary.
 
 \begin{figure}
   \centering
@@ -135,36 +136,61 @@ When slice sampling, there are a number of parameter choices that are imporant. 
     \includegraphics[width=\textwidth]{figures/autocorr-latlong}
     \caption{Autocorrelation for the samples from latitude and longitude}
     \label{fig:autocorr}
-  \end{subfigure}~\begin{subfigure}[b]{0.5\textwidth}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.5\textwidth}
     \centering
     \includegraphics[width=\textwidth]{figures/trace-plots}
     \caption{Trace plots for draws from the latitude and longitude}
     \label{fig:trace}
   \end{subfigure}
+  \caption{Diagnostic plots for location sampling.}
 \end{figure}
 
-\subsection*{Events in time}
-As a modeling assumption, we seperate the dimensions of space and time as being independent. To model events in time across the country, we use an autoregressive Poisson GLM. While standard autoregressive models create a linear relation between a future value and a previous value, the Poisson GLM lets us have a linear relation between previous data and the mean of a Poisson distribution. This will allow us to retain the probabilistic interpretation of the events in time.
+\subsection{Events in time}
+As a modeling assumption, we separate the dimensions of space and time as being independent. To model events in time across the country, we use an autoregressive Poisson GLM. While standard autoregressive models create a linear relation between a future value and a previous value, the Poisson GLM permits a linear relation between previous data and the mean of a Poisson distribution. This will allow us to retain the probabilistic interpretation of the events in time.
 
 In order to model events using a Poisson distribution, we must discretize our time dimension. We opted for month-long increments. The thinking behind this decision is that we want to use sample draws to run our aid optimizations. If a model like this were to be used in planning for future conflicts, having a month-long window for a plan seems like a good balance between precision and logistic concerns.
 
-\emph{TODO:} Finish code and incorporate results.
+The Autoregressive Poisson GLM model can be described as a log-linear relationship between the number of events of political violence and the mean of a Poisson distribution. We start with a timeseries, $\mathbf{X} = \{x_0, x_1,\hdots, x_N\}$, of $N$ counts of events at each discretized point in time. We also start with a lag $\Lambda$ that is the number of previous time steps to include in the model. We can now describe our features at time $t$ as the $\Lambda$ previous time steps: $\mathbf{X_{t, \Lambda}} = \{x_{t-\Lambda}, x_{t-\Lambda-1},\hdots, x_t\}$.
 
-\subsection*{Putting it together}
-We can now use our draws in space and time to generate a simulation of further conflicts in Uganda. These simulated scenarios will be the basis of our adaptive aid-placement and allocation optimization. A model of conflict events in space and time, along with optimized aid-delivery could help organizations such as the Red Cross to order supplies, allocate staff and volunteers, and develop infrastructure.
+The linear predictor in the autoregressive model at a time step is $\eta_t$, and it is related to the mean of the Poisson distribution, $\mu_t$, by its canonical link function, $\log$.
 
-\section*{Optimizing Resource Placement and Allocation}
+\begin{align*}
+\eta_t &= \mathbf{X}_{t, \Lambda}'\beta. \\
+\mu_t &= \log(\eta_t) = \log(\mathbf{X}_{t, \Lambda}'\beta) \\
+\end{align*}
 
-In the second part of this project, we use the first section as both inspiration for the aid delivery analogy and also as a source of randomly sampled data points representing geospatially distributed conflicts.
+Finally, the only parameter to the Poisson distribution is this mean, so the distribution of counts, $k$, at some time t+1 can be given by:
 
-\subsection*{The Traveling Salesman Problem}
+\begin{align*}
+p(k | \mu_t) &= \frac{\mu_t^k}{k!}e^{-\mu_t} \\
+p(k | \mathbf{X}_{t, \Lambda}, \beta) &= \frac{\log(\mathbf{X}_{t, \Lambda}'\beta)^k}{k!}e^{-\log(\mathbf{X}_{t, \Lambda}'\beta)} 
+\end{align*}
 
-One question of particular interest that we can tackle using techniques from the class is how to route emergency aid
-to locations where it is needed.  For concreteness, let's postulate a Red Cross medical or food supply caravan that originates
-from the organization's in-country headquarters. This caravan wishes to visit all $n$ emergent locations in order to
+We can fit this model by using Fisher scoring to calculate $\beta_\mathrm{MLE}$, the coefficients of the model. Figure \ref{fig:poisson} shows this model as compared to actual rates of conflict incidence.
+
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{figures/poisson-regression.png}
+\caption{The Poisson regression model.}
+\label{fig:poisson}
+\end{figure}
+
+\subsection{Putting together the spatial and temporal}
+
+We can now use our draws over space and time to generate a simulation of future conflicts in Uganda. These simulated scenarios will serve as the basis of our aid delivery optimization. The combination of modeling conflict events in space and time along with optimizing aid delivery could prove helpful to organizations such as the Red Cross in ordering supplies, allocating staff and volunteers, and developing infrastructure.
+
+\section{Optimizing humanitarian aid delivery}
+
+In the second part of this project, we use the temporal/geospatial conflict occurence model in the first section as both inspiration for the aid delivery analogy and also as a source of randomly sampled data points representing geospatially distributed conflicts.
+
+\subsection{The traveling salesman problem}
+
+One question of particular interest is how to route emergency aid
+to locations where it is needed.  For concreteness, let's postulate a Red Cross medical or food supply caravan that originates from the organization's in-country headquarters. This caravan wishes to visit all $n$ emergent locations in order to
 deliver needed supplies. They wish to do so in the most efficient manner possible.
 
-This is fundamentally an optimization problem, and one that is well known -- it was first described in 1932 by Karl Menger (shortly after his year here at Harvard as a visiting lecturer) and has been studied extensively ever since.\cite{Menger} Here is the traditional convex optimization specification of the problem:\cite{Winston}
+This is the traveling salesman problem (TSP), an optimization problem that is quite well known. It was first described in 1932 by Karl Menger (shortly after his year here at Harvard as a visiting lecturer) and has been studied extensively ever since.\cite{Menger} Here is the traditional convex optimization specification of the problem:\cite{Winston}
 
 
 \begin{align*}
@@ -176,18 +202,30 @@ This is fundamentally an optimization problem, and one that is well known -- it 
 	&u_i-u_j +nx_{ij} \le n-1 && 1 \le i \ne j \le n
 \end{align*}
 
-As is clear from the specification, this is an integer linear program (ILP) where:
+As is clear from the constraints, this is an integer linear program (ILP) where:
 
 \begin{itemize}
   \item $x_{ij}$ is a binary decision variable indicating whether we go from location $i$ to location $j$.
-  \item $c_{ij}$ is the distance between location $i$ and location $j$.
+  \item $c_{ij}$ is the distance\footnote{In our application, we deal with geospatial data on a large enough scale that the Euclidean distance is actually very imprecise. In order to model distances over the planet's surface, we use the Haversine formula.} between location $i$ and location $j$.
   \item The objective function is the sum of the distances for routes that we decide to take.
   \item The final constraint ensures that all locations are visited once and only once.
 \end{itemize}
 
-\subsection*{Answering complex, realistic questions}
+The problem, of course, is that brute force solution of the TSP is $\mathcal{O}$$(n!)$. Traditional, deterministic
+algorithm approaches such as branch-and-bound or branch-and-cut are still impractical for larger numbers of nodes.
+In many cases, exhaustive search for global optimality is not even particularly helpful as long as the solution
+found is good enough. We will use simulated annealing (SA) to get acceptable solutions to the TSP.
 
-\subsubsection*{Packing the aid truck - adding the Knapsack Problem}
+Figure \ref{fig:routing-vanilla-tsp} shows a sample draw of conflict data (the blue points), and a near-optimal TSP route found through 50,000 iterations of simulated annealing.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth]{figures/routing-vanilla-tsp}
+  \caption{Visiting all conflicts without reloading.}
+  \label{fig:routing-vanilla-tsp}
+\end{figure}
+
+\subsection{Packing the aid truck --- the Knapsack Problem}
 
 We extend the TSP into a multi-objective optimization problem
 where \emph{the contents of the aid trucks} also have an optimization component. Therein lies
@@ -195,10 +233,7 @@ the knapsack problem: subject to a volume or weight constraint, and given that d
 might have very different needs such as food, vaccinations, or emergent medical supplies, \emph{which
 supplies do we pack on the trucks}?
 
-Here's the unbounded\footnote{Often, this problem is formulated such that you can only bring one of
-each item, but that doesn't make sense here. We want to be able to bring as many types of each type
-of aid as we think necessary, and we'll assume that as many as desired are available to load on the
-trucks before starting out from HQ.} version of the knapsack problem:
+Here's the unbounded\footnote{Often, this problem is formulated such that you can only bring one of each item, but that does not make sense in our application. Rather, we want to be able to bring as many types of each type of aid as we think necessary, and we'll assume that as many as desired are available to load on the trucks before starting out from HQ.} version of the knapsack problem:
 
 \begin{align*}
 \max &\sum_{i=1}^n v_i x_i &&  \\
@@ -218,13 +253,50 @@ In this formulation:
   \item $W$ is the maximum weight the truck can carry.
 \end{itemize}
 
-The problem, of course, is that brute force solution of the TSP is $\mathcal{O}$$(n!)$. Traditional, deterministic
-algorithm approaches such as branch-and-bound or branch-and-cut are still impractical for larger numbers of nodes.
-In many cases, exhaustive search for global optimality is not even particularly helpful as long as the solution
-found is good enough. We will use simulated annealing (SA) to get acceptable solutions to the TSP (c.f. the class lectures
-and homework problem).
+\subsection{A brief detour for modeling assumptions}
 
-\begin{figure}
+Before we can optimize this aid delivery mechanism, we will need to decide a way to model humanitarian aid needs at a given conflict.
+
+Let us assume that there are $K$ distinct types of humanitarian aid to be delivered. (Without loss of generality, we will use three categories for all of our examples --- perhaps we can think of them food aid, first aid supplies, and medicines for concreteness.) We can model each conflict's aid needs as
+
+$$\boldsymbol x \sim \mathrm{Dir}(\boldsymbol \alpha)$$
+
+where $\boldsymbol \alpha$ parameterizes the distribution to generate vectors of length $K$ representing the relative proportions of needs.\cite{Murphy} For example, in our three category example we might draw the vector $(0.11,\,0.66,\,0.23)$ for a certain conflict, meaning that 11\% of the aid needed at this conflict is food aid, 66\% is first aid supplies, and 23\% is medicines. Now that we know the proportions for the given conflict, how might we turn this unitless vector into absolute amounts?
+
+For that reason, let's assign each conflict a scaled size $s \in [1, 10]$ based on the number of casualties (a proxy for the severity of the conflict). We can use this size scalar to turn our proportion vector into a vector of absolute needs.
+
+It should be noted that \textbf{both of these modeling methods for proportions and size are ``plug-and-play''} --- because of purposely designed loose coupling in our model, these methods could trivially be replaced by a different method of calculating or predicting the needs of each conflict. For example, if an independent model was used to calculate each of $K$ needs based on the features of each conflict, those quantities could easily be plugged in to this model. Ultimately, the only quantities that our TSP/Knapsack model needs is an $n \times K$ matrix of aid needs for $n$ cities and $K$ categories of aid.
+
+\subsection{A new objective function to integrate TSP and Knapsack}
+
+For the vanilla TSP, we simply try to minimize the total distance. Now that we are adding a new objective, we will need to integrate the two into a coherent \textbf{loss function}.  Here is the function we will actually try to minimize in the combined TSP/Knapsack:
+
+$$L(\boldsymbol x) = \text{total distance} + \text{sum of squared aid shortfalls}$$
+
+The effect of squaring aid shortfalls acts as a weight, causing greater importance to be placed on minimizing this aspect of the problem first. Proposals wherein aid shortfalls occur are heavily penalized. As we will see in later graphs, once the SA algorithm is able to avoid all shortfalls and the concurrent massive loss function penalties, a much slower descent begins to take place wherein the distance is slowly optimized. See figure \ref{fig:sorties-loss} for a depiction of this phenomenon.
+
+\subsection{Implementing the Knapsack aspect}
+
+Figure \ref{fig:routing-reloading} shows the same draw of cities as in figure \ref{fig:routing-vanilla-tsp}, this time factoring in limited carrying capacity for aid supplies on the aid delivery mechanism and using our new loss function. As we can see, the huge penalty incurred when supplies run out quickly induces the simulated annealing algorithm to converge on a solution with multiple stops at HQ to reload.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\textwidth]{figures/routing-reloading}
+  \caption{Routing with reloading from capital city Kampala.}
+  \label{fig:routing-reloading}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\textwidth]{figures/sorties-loss}
+  \caption{Loss function acceptances over 100,000 iterations.}
+  \label{fig:sorties-loss}
+\end{figure}
+
+Figure \ref{fig:sorties} uses some uniformly distributed points on the $[0,50]$ plane to demonstrate how the proposed TSP/Knapsack routes converge as the number of iterations increases.
+
+
+\begin{figure}[h]
   \centering
   \begin{subfigure}[b]{0.5\textwidth}
     \centering
@@ -240,24 +312,32 @@ and homework problem).
     \includegraphics[width=\textwidth]{figures/sorties-100000}
     \caption{After 100,000 iterations.}
   \end{subfigure}
-  \caption{Routing for the TSP/Knapsack hybrid.}
+  \caption{Example routing for the TSP/Knapsack hybrid using uniformly distributed points.}
   \label{fig:sorties}
 \end{figure}
 
-\begin{figure}
-	\centering
-	\includegraphics[width=\textwidth]{figures/sorties-loss}
-	\caption{Loss function acceptances over 100,000 iterations.}
-	\label{fig:sorties-loss}
+\subsubsection{Finding the optimal site for the resupply location}
+
+Our initial assumption was that the HQ was located in the capital city of Kampala. However, we should ask whether our HQ could be more conveniently located. We can answer this question by treating the reload location as another parameter and continuing to sample HQ locations using SA. Figure \ref{fig:routing-reloading-hq-optimal} shows the TSP/Knapsack optimized once again, this time using a the optimal HQ location, while \ref{fig:comparative-loss-plot} compares the loss function as each method converges to its best possible configuration.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.5\columnwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/routing-reloading-hq-optimal}
+    \caption{Routing with reloading from optimal HQ.}
+    \label{fig:routing-reloading-hq-optimal}
+  \end{subfigure}~\begin{subfigure}[b]{0.46\columnwidth}
+    \centering
+    \centering
+    \includegraphics[width=\textwidth]{figures/comparative-loss-plot}
+    \caption{Example loss function optimization convergence for $n=50$.}
+    \label{fig:comparative-loss-plot}
+  \end{subfigure}
+  \caption{Optimizing aid delivery routing with reloading.}
 \end{figure}
 
-\subsubsection*{Finding the optimal site for the resupply location}
-
-\emph{TODO:} At the moment, our code draws random cities. We need to update this code to use the samples from our slice sampling instead.
-
-\emph{TODO:} We are working on the code that incorporates finding the optimal location of HQ.
-
-\subsubsection*{Factoring in travel time and loss from service delays}
+\subsubsection{Factoring in travel time and loss from service delays}
 
 Since we have draws in space and time, we want to update our cost function. As refugees build up, injuries go untreated, and citizens become more desperate for supplies, sending the aid truck to a particular location becomes more important. We want to incorporate this idea by including a time-sice-event term in our cost function. As time passes and the site remains unvisited, it becomes more important for the aid truck to visit these locations. 
 
