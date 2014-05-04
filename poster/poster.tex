@@ -195,6 +195,8 @@ where \textbf{the contents of the aid trucks} also have an optimization componen
 the knapsack problem: subject to a volume or weight constraint, and given that different locations
 might have very different needs such as food, vaccinations, or emergent medical supplies, \textbf{which supplies do we pack on the trucks}?  Often, this problem is formulated such that you can only bring one of each item, but that doesn't make sense here. We want to be able to bring as many types of each type of aid as we think necessary, and we'll assume that as many as desired are available to load on the trucks before starting out from HQ. Here's the unbounded version of the knapsack problem:
 
+\vspace{-10mm}
+
 \begin{align*}
 \max &\sum_{i=1}^n v_i x_i &&  \\
 \mathrm{s.t.} \; \; & x_i \in \mathbb{Z}, \; x_i \geq 0 \; \sum_{i=1}^n w_ix_i \leq W
@@ -227,7 +229,7 @@ might have very different needs such as food, vaccinations, or emergent medical 
 
 \vspace{-6mm}
 
-Although we have now optimized our route so that we never run out of supplies, we should ask whether our HQ could be more conveniently located. We can answer this by treating the reload location as another set of parameters and continuing to sample HQ locations using SA. Figure \ref{fig:routing-reloading-hq-optimal} shows the TSP/Knapsack optimized once again, this time using a the optimal HQ location, while \ref{fig:comparative-loss-plot} compares the loss function as each method converges to its best possible configuration.
+Our initial assumption was that the HQ was located in the capital city of Kampala. However, we should ask whether our HQ could be more conveniently located. We can answer this by treating the reload location as another parameter and continuing to sample HQ locations using SA. Figure \ref{fig:routing-reloading-hq-optimal} shows the TSP/Knapsack optimized once again, this time using a the optimal HQ location, while \ref{fig:comparative-loss-plot} compares the loss function as each method converges to its best possible configuration.
 
 \vspace{-6mm}
 
@@ -235,7 +237,7 @@ Although we have now optimized our route so that we never run out of supplies, w
 
 \vspace{-6mm}
 
-In each part of this problem, analytical solutions either do not exist (e.g. in simulation) or are computationally infeasible (e.g. in the TSP/Knapsack optimizations).  We found that using a metaheuristic such as SA converged on robust solutions in relatively short order.  Future research might include adding many more constraints or twists to the problem, and trying different stochastic optimization techniques such as genetic optimization, Tabu search, or ant colony optimization.
+In each part of this problem, analytical solutions either do not exist (e.g. in the distribution of events) or are computationally infeasible (e.g. in the TSP/Knapsack optimizations).  We found that using a metaheuristic such as SA converged on robust solutions in relatively short order. In the future, we would like to formulate our loss function based on real world data based on refugee locations and aid distribution requirements; our methodology would not change, but the solutions would be more useful for predictive tasks. Future research might also include adding many more constraints or twists to the problem, and trying different stochastic optimization techniques such as genetic optimization, Tabu search, or ant colony optimization.
 
 \vspace{-6mm}
 
