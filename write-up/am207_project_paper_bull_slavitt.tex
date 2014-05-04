@@ -296,7 +296,7 @@ Figure \ref{fig:routing-reloading} shows the same draw of cities as in figure \r
 Figure \ref{fig:sorties} uses some uniformly distributed points on the $[0,50]$ plane to demonstrate how the proposed TSP/Knapsack routes converge as the number of iterations increases.
 
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \begin{subfigure}[b]{0.5\textwidth}
     \centering
@@ -309,18 +309,18 @@ Figure \ref{fig:sorties} uses some uniformly distributed points on the $[0,50]$ 
   \end{subfigure}
   \begin{subfigure}[b]{\textwidth}
     \centering
-    \includegraphics[width=\textwidth]{figures/sorties-100000}
+    \includegraphics[width=0.75\textwidth]{figures/sorties-100000}
     \caption{After 100,000 iterations.}
   \end{subfigure}
   \caption{Example routing for the TSP/Knapsack hybrid using uniformly distributed points.}
   \label{fig:sorties}
 \end{figure}
 
-\subsubsection{Finding the optimal site for the resupply location}
+\subsection{Finding the optimal site for the resupply location}
 
 Our initial assumption was that the HQ was located in the capital city of Kampala. However, we should ask whether our HQ could be more conveniently located. We can answer this question by treating the reload location as another parameter and continuing to sample HQ locations using SA. Figure \ref{fig:routing-reloading-hq-optimal} shows the TSP/Knapsack optimized once again, this time using a the optimal HQ location, while \ref{fig:comparative-loss-plot} compares the loss function as each method converges to its best possible configuration.
 
-\begin{figure}[H]
+\begin{figure}
   \centering
   \begin{subfigure}[b]{0.5\columnwidth}
     \centering
@@ -337,11 +337,10 @@ Our initial assumption was that the HQ was located in the capital city of Kampal
   \caption{Optimizing aid delivery routing with reloading.}
 \end{figure}
 
-\subsubsection{Factoring in travel time and loss from service delays}
+\section*{Conclusions}
 
-Since we have draws in space and time, we want to update our cost function. As refugees build up, injuries go untreated, and citizens become more desperate for supplies, sending the aid truck to a particular location becomes more important. We want to incorporate this idea by including a time-sice-event term in our cost function. As time passes and the site remains unvisited, it becomes more important for the aid truck to visit these locations. 
+In each part of this problem, analytical solutions either do not exist (e.g. in the distribution of events) or are computationally infeasible (e.g. in the TSP/Knapsack optimizations).  We found that using a metaheuristic such as SA converged on robust solutions in relatively short order. In the future, we would like to formulate our loss function based on real world data based on refugee locations and aid distribution requirements; our methodology would not change, but the solutions would be more useful for predictive tasks. Additionally, the separate models could be fit and incorporated which realistically model how much of each type of aid is needed at each conflict location. Future research might also include adding many more constraints or twists to the problem, and trying different stochastic optimization techniques such as genetic optimization, Tabu search, or ant colony optimization.
 
-\emph{TODO:} Incorporate this code and results.
 
 \bibliography{proposal}
 
