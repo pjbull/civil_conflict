@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.spatial.distance import euclidean
 from haversine import haversine
+from SliceSampler import SliceSampler
 
 
 class Configuration(object):
@@ -167,11 +168,12 @@ class TSPRoute(Route):
 class HqLocator(object):
     """ class which also moves HQ around """
 
-    def __init__(self, n=100, x_domain=(29., 36.), y_domain=(-1., 4), proposed_location=None):
+    def __init__(self, n=100, x_domain=(29., 36.), y_domain=(-1., 4), proposed_location=None, data_model=None):
 
         self.n = n
         self.x_domain = x_domain
         self.y_domain = y_domain
+        self.data_model = data_model
         self.draw_new_random_cities()
 
         self._proposed_location = proposed_location
@@ -218,4 +220,4 @@ class HqLocatorUganda(HqLocator):
     """ sample cities from the Uganda distribution """
 
     def draw_new_random_cities(self):
-        self.cities = slicer_api(*self.x_domain, size=(self.n, 2))
+        self.cities = self.data_model.sample_fake_uniform(*self.x_domain, size=(self.n, 2))
