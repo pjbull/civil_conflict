@@ -31,7 +31,8 @@
         <div class="header">
           <ul class="nav nav-pills pull-right">
             <li class="active"><a href="index.html">Home</a></li>
-            <li><a href="results.html">Results</a></li>
+            <li><a href="simulation.html">Simulation</a></li>
+            <li><a href="optimization.html">Optimization</a></li>
             <li><a href="https://github.com/pjbull/civil_conflict/" target="_blank">
               <img src="img/GitHub-Mark-32px.png" height="18" style="vertical-align:text-top;"/> Code</a></li>
             </ul>
@@ -43,27 +44,48 @@
           </div>
 
           <div class="jumbotron">
-<!--             <iframe src="//player.vimeo.com/video/81285957?color=ffffff" width="520" height="293" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe> -->
+            <!--             <iframe src="//player.vimeo.com/video/81285957?color=ffffff" width="520" height="293" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe> -->
             <iframe class="youtube-player" type="text/html" width="520" height="293" src="http://www.youtube.com/embed/w-HNh65KNvU" allowfullscreen frameborder="0">
-</iframe>
+            </iframe>
           </div>
 
           <div class="row marketing">
             <div class="col-md-6">
+            <h3>Background</h3>
 
+              <p>The data comes from ACLED (Armed Conflict Location and Event Data Project), which is a dataset with locations, dates, fatalities, motivation, actors involved, and other information about civil conflicts in Africa. Their collection of data on Uganda covers 1997-2013, and they have a real-time tracker of events reported in 2014. The need for an understanding of these patterns of conflict is clear, as ACLED notes: </p>
 
-              <h4>Background</h4>
+              <blockquote>
+                This dataset codes the dates and locations of all reported political violence events in over 50 developing countries. Political violence includes events that occur within civil wars or periods of instability. Although civil war occurrence is decreasing across African countries, new forms of political violence are becoming more common.
+              </blockquote>
 
-              <p>Using MCMC techniques, we model civil conflict in Uganda and optimize the limited relief aid that can be provided in these scenarios. We describe a method to simulate civil conflict events in space and time given historical data about these events. We also optimize the distribution of limited aid resources to refugees from these crises. Modeling aid delivery as a combination of the traveling salesman problem and the knapsack algorithm &mdash; two NP-hard problems &mdash; we find acceptable solutions using stochastic metaheuristics.</p>
-            </div>
+              <p>In this project, we focus on the Republic of Uganda, for which the dataset contains around 4,500 observations of civil violence. Each observation includes the date, geographic location, event type, number of fatalities for the event, actors involved and a meta-measure which estimates how precise these measures are. Figure <a href="#1">1</a> shows these conflicts scattered on a political map of Uganda.</p>
+
+              <div class="panel panel-info">
+                <a name="1"></a>
+                <div class="panel-heading">Figure 1</div>
+                <div class="panel-body">
+                  <img src="img/uganda.png" width="100%" max-width="600" />
+                </div>
+                <div class="panel-footer">Civil conflicts in Uganda 1997-2013.</div>
+              </div>
+
+            </div> <!-- /col -->
 
             <div class="col-md-6">
 
-              <h4>Data</h4>
+              <h3>Overview</h3>
 
-              <p>The data comes from ACLED (Armed Conflict Location and Event Data Project), which is a dataset with locations, dates, fatalities, motivation, actors involved, and other information about civil conflicts in Africa. Their collection of data on Uganda covers 1997-2013, and they have a real-time tracker of events reported in 2014. The need for an understanding of these patterns of conflict is clear, as ACLED notes:</p>
-            </div>
-          </div>
+              <p>In the <a href="simulation.html">simulation part of this project</a>, we use the data and MCMC methods to simulate where civil conflicts happen in both space and time. Instead of creating a hierarchical, generative model that attempts to fit parameters for all kinds of underlying causes, we instead treat the past data as an empirical distribution from which to sample. This works out well for us, because the goal here is less to predict exactly when and where conflicts take place than to create plausible scenarios for the optimization part of the project.</p>
+
+              <p>In the <a href="optimization.html">optimization part of this project</a>, we use the temporal/geospatial conflict occurence model in the first section as both inspiration for the aid delivery analogy and also as a source of randomly sampled data points representing geospatially distributed conflicts.</p>
+
+              <h3>Conclusions</h3>
+
+              <p>In each part of this problem, analytical solutions either do not exist (e.g. in the distribution of events) or are computationally infeasible (e.g. in the TSP/Knapsack optimizations). We found that using a metaheuristic such as SA converged on robust solutions in relatively short order. In the future, we would like to formulate our loss function based on real world data based on refugee locations and aid distribution requirements; our methodology would not change, but the solutions would be more useful for predictive tasks. Additionally, the separate models could be fit and incorporated which realistically model how much of each type of aid is needed at each conflict location. Future research might also include adding many more constraints or twists to the problem, and trying different stochastic optimization techniques such as genetic optimization, Tabu search, or ant colony optimization.</p>
+            
+            </div> <!-- /col -->
+          </div> <!-- /row -->
 
           <div class="footer">
             <p>P. Bull, I. Slavitt, 2014</p>

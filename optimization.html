@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <link rel="shortcut icon" href="img/favicon.ico">
+
+  <title>AM 207 Final Project</title>
+
+  <!-- Bootstrap core CSS -->
+  <link href="//netdna.bootstrapcdn.com/bootswatch/3.1.1/yeti/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Custom styles for this template -->
+  <link href="http://getbootstrap.com/examples/jumbotron-narrow/jumbotron-narrow.css" rel="stylesheet">
+
+  <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+      <![endif]-->
+
+      <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({
+          tex2jax: {inlineMath: [['$','$']]}
+        });
+      </script>
+      <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+      </script>
+    </head>
+
+    <body>
+
+      <div class="container">
+        <div class="header">
+          <ul class="nav nav-pills pull-right">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="simulation.html">Simulation</a></li>
+            <li class="active"><a href="optimization.html">Optimization</a></li>
+            <li><a href="https://github.com/pjbull/civil_conflict/" target="_blank">
+              <img src="img/GitHub-Mark-32px.png" height="18" style="vertical-align:text-top;"/> Code</a></li>
+            </ul>
+            <h3 class="text-muted">AM 207 Final Project</h3>
+          </div>
+
+          <div class="container">
+            <h2>Modeling and Simulating Political Violence and Optimizing Aid Distribution in Uganda</h2>
+            <h3 class="text-muted">Optimizing humanitarian aid delivery</h3>
+          </div>
+
+          <div class="row marketing">
+            <div class="col-md-12">
+
+              <h4>The traveling salesman problem</h4>
+
+              <p>One question of particular interest is how to route emergency aid to locations where it is needed. For concreteness, let’s postulate a Red Cross medical or food supply caravan that originates from the organization’s in-country headquarters. This caravan wishes to visit all $n$ emergent locations in order to deliver needed supplies. They wish to do so in the most efficient manner possible.</p>
+
+              <p>This is the traveling salesman problem (TSP), an optimization problem that is quite well known. It was first described in 1932 by Karl Menger and has been studied extensively ever since. Here is the traditional convex optimization specification of the problem:</p>
+
+              $$\begin{aligned}
+              \min &\sum_{i=0}^n \sum_{j\ne i,j=0}^nc_{ij}x_{ij} &&  \\
+              \mathrm{s.t.} & \\
+              & x_{ij} \in \{0, 1\} && i,j=0, \cdots, n \\
+              & \sum_{i=0,i\ne j}^n x_{ij} = 1 && j=0, \cdots, n \\
+              & \sum_{j=0,j\ne i}^n x_{ij} = 1 && i=0, \cdots, n \\
+              &u_i-u_j +nx_{ij} \le n-1 && 1 \le i \ne j \le n\end{aligned}$$
+
+              <p>As is clear from the constraints, this is an integer linear program (ILP) where:</p>
+
+              <ul>
+                <li>$x_{ij}$ is a binary decision variable indicating whether we go from location $i$ to location $j$.</li>
+                <li>$c_{ij}$ is the distance between location $i$ and location $j$. (Note: in our application, we deal with geospatial data on a large enough scale that the Euclidean distance is actually very imprecise. In order to model distances over the planet’s surface, we use the Haversine formula.)</li>
+                <li>The objective function is the sum of the distances for routes that we decide to take.</li>
+                <li>The final constraint ensures that all locations are visited once and only once.</li>
+              </ul>
+
+              <p>The problem, of course, is that brute force solution of the TSP is $\mathcal{O}$$(n!)$. Traditional, deterministic algorithm approaches such as branch-and-bound or branch-and-cut are still impractical for larger numbers of nodes. In many cases, exhaustive search for global optimality is not even particularly helpful as long as the solution found is good enough. We will use simulated annealing (SA) to get acceptable solutions to the TSP.</p>
+
+              <p>Figure <a href="#8">8</a> shows a sample draw of conflict data (the blue points), and a near-optimal TSP route found through 50,000 iterations of simulated annealing.</p>
+
+              <p></p>
+              <div class="panel panel-info">
+                <a name="8"></a>
+                <div class="panel-heading">Figure 8</div>
+                <div class="panel-body">
+                  <img src="img/routing-vanilla-tsp.png" width="100%" max-width="600" />
+                </div>
+                <div class="panel-footer">Visiting all conflicts without reloading.</div>
+              </div>
+
+              <h4>Packing the aid truck &mdash; the Knapsack Problem</h4>
+
+              <p>We extend the TSP into a multi-objective optimization problem where the contents of the aid trucks also have an optimization component. Therein lies the knapsack problem: subject to a volume or weight constraint, and given that different locations might have very different needs such as food, vaccinations, or emergent medical supplies, which supplies do we pack on the trucks?</p>
+
+              <p>Often, this problem is formulated such that you can only bring one of each item, but that does not make sense in our application. Rather, we want to be able to bring as many types of each type of aid as we think necessary, and we’ll assume that as many as desired are available to load on the trucks before starting out from HQ.  Here’s the unbounded version of the knapsack problem:</p>
+
+              $$\begin{aligned}
+              \max &\sum_{i=1}^n v_i x_i &&  \\
+              \mathrm{s.t.} & \\
+              & x_i \in \mathbb{Z} \\
+              & x_i \geq 0 \\
+              & \sum_{i=1}^n w_ix_i \leq W\end{aligned}$$
+
+              <p>In this formulation:</p>
+
+              <ul>
+                <li>$x_{i}$ is a zero or positive integer decision variable indicating how many units of item $i$ we load on the truck.</li>
+                <li>$v_i$ is the utility we get from bringing along item $i$.</li>
+                <li>$w_i$ is the weight of item $i$.</li>
+                <li>$W$ is the maximum weight the truck can carry.</li>
+              </ul>
+
+              <h4>A brief detour for modeling assumptions</h4>
+
+              <p>Before we can optimize this aid delivery mechanism, we will need to decide a way to model humanitarian aid needs at a given conflict.</p>
+
+              <p>Let us assume that there are $K$ distinct types of humanitarian aid to be delivered. (Without loss of generality, we will use three categories for all of our examples &mdash; perhaps we can think of them food aid, first aid supplies, and medicines for concreteness.) We can model each conflict’s aid needs as</p>
+
+              $$\boldsymbol x \sim \mathrm{Dir}(\boldsymbol \alpha)$$
+
+              <p>where $\boldsymbol \alpha$ parameterizes the distribution to generate vectors of length $K$ representing the relative proportions of needs. For example, in our three category example we might draw the vector $(0.11,\,0.66,\,0.23)$ for a certain conflict, meaning that 11% of the aid needed at this conflict is food aid, 66% is first aid supplies, and 23% is medicines. Now that we know the proportions for the given conflict, how might we turn this unitless vector into absolute amounts?</p>
+
+              <p>For that reason, let’s assign each conflict a scaled size $s \in [1, 10]$ based on the number of casualties (a proxy for the severity of the conflict). We can use this size scalar to turn our proportion vector into a vector of absolute needs.</p>
+
+              <p>It should be noted that both of these modeling methods for proportions and size are “plug-and-play” &mdash; because of purposely designed loose coupling in our model, these methods could trivially be replaced by a different method of calculating or predicting the needs of each conflict. For example, if an independent model was used to calculate each of $K$ needs based on the features of each conflict, those quantities could easily be plugged in to this model. Ultimately, the only quantities that our TSP/Knapsack model needs is an $n \times K$ matrix of aid needs for $n$ cities and $K$ categories of aid.</p>
+
+              <h4>A new objective function to integrate TSP and Knapsack</h4>
+
+              <p>For the vanilla TSP, we simply try to minimize the total distance. Now that we are adding a new objective, we will need to integrate the two into a coherent loss function. Here is the function we will actually try to minimize in the combined TSP/Knapsack:</p>
+
+              $$L(\boldsymbol x) = \text{total distance} + \text{sum of squared aid shortfalls}$$
+
+              <p>The effect of squaring aid shortfalls acts as a weight, causing greater importance to be placed on minimizing this aspect of the problem first. Proposals wherein aid shortfalls occur are heavily penalized. As we will see in later graphs, once the SA algorithm is able to avoid all shortfalls and the concurrent massive loss function penalties, a much slower descent begins to take place wherein the distance is slowly optimized. See figure <a href="#10">10</a> for a depiction of this phenomenon.</p>
+
+              <h4>Implementing the Knapsack aspect</h4>
+
+              <p>Figure <a href="#9">9</a> shows the same draw of cities as in figure <a href="#8">8</a>, this time factoring in limited carrying capacity for aid supplies on the aid delivery mechanism and using our new loss function. As we can see, the huge penalty incurred when supplies run out quickly induces the simulated annealing algorithm to converge on a solution with multiple stops at HQ to reload.</p>
+
+              <p></p>
+              <div class="panel panel-info">
+                <a name="9"></a>
+                <div class="panel-heading">Figure 9</div>
+                <div class="panel-body">
+                  <img src="img/routing-reloading.png" width="100%" max-width="600" />
+                </div>
+                <div class="panel-footer">Routing with reloading from capital city Kampala.</div>
+              </div>
+
+              <p></p>
+              <div class="panel panel-info">
+                <a name="10"></a>
+                <div class="panel-heading">Figure 10</div>
+                <div class="panel-body">
+                  <img src="img/sorties-loss.png" width="100%" max-width="600" />
+                </div>
+                <div class="panel-footer">Loss function acceptances over 100,000 iterations.</div>
+              </div>
+
+              <p>Figures <a href="#11">11</a>, <a href="#12">12</a>, and <a href="#13">13</a> use some uniformly distributed points on the $[0,50]$ plane to demonstrate how the proposed TSP/Knapsack routes converge as the number of iterations increases.</p>
+
+              <p></p>
+              <div class="panel panel-info">
+                <a name="11"></a>
+                <div class="panel-heading">Figure 11</div>
+                <div class="panel-body">
+                  <img src="img/sorties-5000.png" width="100%" max-width="600" />
+                </div>
+                <div class="panel-footer">After 5,000 iterations.</div>
+              </div>
+
+              <p></p>
+              <div class="panel panel-info">
+                <a name="12"></a>
+                <div class="panel-heading">Figure 12</div>
+                <div class="panel-body">
+                  <img src="img/sorties-20000.png" width="100%" max-width="600" />
+                </div>
+                <div class="panel-footer">After 20,000 iterations.</div>
+              </div>
+
+              <p></p>
+              <div class="panel panel-info">
+                <a name="13"></a>
+                <div class="panel-heading">Figure 13</div>
+                <div class="panel-body">
+                  <img src="img/sorties-100000.png" width="100%" max-width="600" />
+                </div>
+                <div class="panel-footer">After 100,000 iterations.</div>
+              </div>
+
+              <h4>Finding the optimal site for the resupply location</h4>
+
+              <p>Our initial assumption was that the HQ was located in the capital city of Kampala. However, we should ask whether our HQ could be more conveniently located. We can answer this question by treating the reload location as another parameter and continuing to sample HQ locations using SA. Figure <a href="#14">14</a> shows the TSP/Knapsack optimized once again, this time using a the optimal HQ location, while figure <a href="#15">15</a> compares the loss function as each method converges to its best possible configuration.</p>
+
+              <p></p>
+              <div class="panel panel-info">
+                <a name="14"></a>
+                <div class="panel-heading">Figure 14</div>
+                <div class="panel-body">
+                  <img src="img/routing-reloading-hq-optimal.png" width="100%" max-width="600" />
+                </div>
+                <div class="panel-footer">Routing with reloading from optimal HQ.</div>
+              </div>
+
+              <p></p>
+              <div class="panel panel-info">
+                <a name="15"></a>
+                <div class="panel-heading">Figure 15</div>
+                <div class="panel-body">
+                  <img src="img/comparative-loss-plot.png" width="100%" max-width="600" />
+                </div>
+                <div class="panel-footer">Example loss function optimization convergence for $n=50$.</div>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="footer">
+            <p>P. Bull, I. Slavitt, 2014</p>
+          </div>
+
+        </div> <!-- /container -->
+
+
+        <!-- Bootstrap core JavaScript ================================================== -->
+        <!-- Placed at the end of the document so the pages load faster -->
+        <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://code.jquery.com/jquery.js"></script>
+        <!-- Include all compiled plugins (below), or include individual files as needed -->
+        <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.2/js/bootstrap.min.js"></script>
+      </body>
+      </html>
